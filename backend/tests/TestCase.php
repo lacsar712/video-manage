@@ -44,6 +44,7 @@ abstract class TestCase extends BaseTestCase
         $this->db->exec("SET FOREIGN_KEY_CHECKS = 0");
         $this->db->exec("TRUNCATE TABLE admin_user");
         $this->db->exec("TRUNCATE TABLE admin_token");
+        $this->db->exec("TRUNCATE TABLE video_category");
         $this->db->exec("TRUNCATE TABLE video");
         $this->db->exec("TRUNCATE TABLE video_source");
         $this->db->exec("SET FOREIGN_KEY_CHECKS = 1");
@@ -79,12 +80,38 @@ abstract class TestCase extends BaseTestCase
         return $token;
     }
 
+    protected function createTestCategory($data = [])
+    {
+        $defaults = [
+            'name' => '测试分类',
+            'slug' => 'test-category',
+            'sort_order' => 0,
+            'status' => 1
+        ];
+
+        $data = array_merge($defaults, $data);
+
+        $stmt = $this->db->prepare("
+            INSERT INTO video_category (name, slug, sort_order, status, created_at)
+            VALUES (?, ?, ?, ?, NOW())
+        ");
+        $stmt->execute([
+            $data['name'],
+            $data['slug'],
+            $data['sort_order'],
+            $data['status']
+        ]);
+
+        return $this->db->lastInsertId();
+    }
+
     /**
      * 创建测试影片
      */
     protected function createTestVideo($data = [])
     {
         $defaults = [
+            'category_id' => null,
             'title' => '测试影片',
             'cover_url' => 'https://example.com/test.jpg',
             'description' => '测试描述',
@@ -94,10 +121,11 @@ abstract class TestCase extends BaseTestCase
         $data = array_merge($defaults, $data);
 
         $stmt = $this->db->prepare("
-            INSERT INTO video (title, cover_url, description, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, NOW(), NOW())
+            INSERT INTO video (category_id, title, cover_url, description, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, NOW(), NOW())
         ");
         $stmt->execute([
+            $data['category_id'],
             $data['title'],
             $data['cover_url'],
             $data['description'],

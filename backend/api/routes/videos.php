@@ -5,6 +5,7 @@ function getVideoList() {
     $pageSize = intval($_GET['page_size'] ?? 10);
     $status = $_GET['status'] ?? '';
     $keyword = $_GET['keyword'] ?? '';
+    $categoryId = $_GET['category_id'] ?? '';
 
     $page = max(1, $page);
     $pageSize = min(100, max(1, $pageSize));
@@ -13,40 +14,43 @@ function getVideoList() {
     try {
         $db = getDB();
 
-        // 构建查询条件
         $where = [];
         $params = [];
 
         if ($status !== '') {
-            $where[] = "status = ?";
+            $where[] = "v.status = ?";
             $params[] = $status;
         }
 
         if ($keyword !== '') {
-            $where[] = "title LIKE ?";
+            $where[] = "v.title LIKE ?";
             $params[] = "%{$keyword}%";
+        }
+
+        if ($categoryId !== '') {
+            validateInt($categoryId, '分类ID');
+            $where[] = "v.category_id = ?";
+            $params[] = $categoryId;
         }
 
         $whereClause = empty($where) ? '' : 'WHERE ' . implode(' AND ', $where);
 
-        // 查询总数
-        $stmt = $db->prepare("SELECT COUNT(*) as total FROM video {$whereClause}");
+        $stmt = $db->prepare("SELECT COUNT(*) as total FROM video v {$whereClause}");
         $stmt->execute($params);
         $total = $stmt->fetch()['total'];
 
-        // 查询列表
         $stmt = $db->prepare("
-            SELECT id, title, cover_url, description, status,
-                   created_at, updated_at
-            FROM video
+            SELECT v.id, v.category_id, v.title, v.cover_url, v.description, v.status,
+                   v.created_at, v.updated_at, vc.name as category_name
+            FROM video v
+            LEFT JOIN video_category vc ON v.category_id = vc.id
             {$whereClause}
-            ORDER BY id DESC
+            ORDER BY v.id DESC
             LIMIT {$offset}, {$pageSize}
         ");
         $stmt->execute($params);
         $list = $stmt->fetchAll();
 
-        // 格式化日期
         foreach ($list as &$item) {
             $item['created_at'] = formatDateTime($item['created_at']);
             $item['updated_at'] = formatDateTime($item['updated_at']);
@@ -64,13 +68,17 @@ function getVideoList() {
     }
 }
 
-// 获取影片详情
 function getVideoDetail($id) {
     validateInt($id, '影片ID');
 
     try {
         $db = getDB();
-        $stmt = $db->prepare("SELECT * FROM video WHERE id = ?");
+        $stmt = $db->prepare("
+            SELECT v.*, vc.name as category_name
+            FROM video v
+            LEFT JOIN video_category vc ON v.category_id = vc.id
+            WHERE v.id = ?
+        ");
         $stmt->execute([$id]);
         $video = $stmt->fetch();
 
@@ -88,39 +96,51 @@ function getVideoDetail($id) {
     }
 }
 
-// 新增影片
 function createVideo() {
     $title = $_POST['title'] ?? '';
     $coverUrl = $_POST['cover_url'] ?? '';
     $description = $_POST['description'] ?? '';
     $status = $_POST['status'] ?? 1;
+    $categoryId = $_POST['category_id'] ?? '';
 
-    // 验证必填
     validateRequired([
         'title' => '影片标题'
     ], ['title' => $title]);
 
-    // 验证长度
     validateLength($title, 1, 200, '影片标题');
 
-    // 验证描述长度
     if (!empty($description)) {
         validateLength($description, 0, 1000, '影片描述');
     }
 
-    // 验证状态值
     if (!in_array($status, [0, 1, '0', '1'])) {
         error('状态值必须为 0 或 1');
     }
-    $status = intval($status); // 统一转换为整数
+    $status = intval($status);
+
+    if ($categoryId !== '') {
+        validateInt($categoryId, '分类ID');
+        $categoryId = intval($categoryId);
+    } else {
+        $categoryId = null;
+    }
 
     try {
         $db = getDB();
+
+        if ($categoryId !== null) {
+            $stmt = $db->prepare("SELECT id FROM video_category WHERE id = ? AND status = 1");
+            $stmt->execute([$categoryId]);
+            if (!$stmt->fetch()) {
+                error('所选分类不存在或已禁用');
+            }
+        }
+
         $stmt = $db->prepare("
-            INSERT INTO video (title, cover_url, description, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, NOW(), NOW())
+            INSERT INTO video (category_id, title, cover_url, description, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, NOW(), NOW())
         ");
-        $stmt->execute([$title, $coverUrl, $description, $status]);
+        $stmt->execute([$categoryId, $title, $coverUrl, $description, $status]);
 
         $videoId = $db->lastInsertId();
 
@@ -131,7 +151,6 @@ function createVideo() {
     }
 }
 
-// 更新影片
 function updateVideo($id) {
     validateInt($id, '影片ID');
 
@@ -139,44 +158,54 @@ function updateVideo($id) {
     $coverUrl = $_POST['cover_url'] ?? '';
     $description = $_POST['description'] ?? '';
     $status = $_POST['status'] ?? '';
+    $categoryId = $_POST['category_id'] ?? '';
 
-    // 验证必填
     validateRequired([
         'title' => '影片标题',
         'status' => '状态'
     ], ['title' => $title, 'status' => $status]);
 
-    // 验证长度
     validateLength($title, 1, 200, '影片标题');
 
-    // 验证描述长度
     if (!empty($description)) {
         validateLength($description, 0, 1000, '影片描述');
     }
 
-    // 验证状态值
     if (!in_array($status, [0, 1, '0', '1'])) {
         error('状态值必须为 0 或 1');
     }
-    $status = intval($status); // 统一转换为整数
+    $status = intval($status);
+
+    if ($categoryId !== '') {
+        validateInt($categoryId, '分类ID');
+        $categoryId = intval($categoryId);
+    } else {
+        $categoryId = null;
+    }
 
     try {
         $db = getDB();
 
-        // 检查影片是否存在
         $stmt = $db->prepare("SELECT id FROM video WHERE id = ?");
         $stmt->execute([$id]);
         if (!$stmt->fetch()) {
             error('影片不存在', 404);
         }
 
-        // 更新影片
+        if ($categoryId !== null) {
+            $stmt = $db->prepare("SELECT id FROM video_category WHERE id = ? AND status = 1");
+            $stmt->execute([$categoryId]);
+            if (!$stmt->fetch()) {
+                error('所选分类不存在或已禁用');
+            }
+        }
+
         $stmt = $db->prepare("
             UPDATE video
-            SET title = ?, cover_url = ?, description = ?, status = ?, updated_at = NOW()
+            SET category_id = ?, title = ?, cover_url = ?, description = ?, status = ?, updated_at = NOW()
             WHERE id = ?
         ");
-        $stmt->execute([$title, $coverUrl, $description, $status, $id]);
+        $stmt->execute([$categoryId, $title, $coverUrl, $description, $status, $id]);
 
         success(null, '更新成功');
 

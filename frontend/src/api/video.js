@@ -17,6 +17,67 @@ export function getVideoDetail(id) {
   })
 }
 
+export function getCategoryList(params) {
+  return request({
+    url: '/categories',
+    method: 'get',
+    params
+  })
+}
+
+export function getCategoryDetail(id) {
+  return request({
+    url: `/categories/${id}`,
+    method: 'get'
+  })
+}
+
+export function createCategory(data) {
+  const formData = new FormData()
+  formData.append('name', data.name)
+  formData.append('slug', data.slug)
+  formData.append('sort_order', data.sort_order ?? 0)
+  formData.append('status', data.status ?? 1)
+
+  return request({
+    url: '/categories',
+    method: 'post',
+    data: formData
+  })
+}
+
+export function updateCategory(id, data) {
+  const formData = new FormData()
+  formData.append('name', data.name)
+  formData.append('slug', data.slug)
+  formData.append('sort_order', data.sort_order ?? 0)
+  formData.append('status', data.status)
+
+  return request({
+    url: `/categories/${id}`,
+    method: 'post',
+    data: formData
+  })
+}
+
+export function deleteCategory(id) {
+  return request({
+    url: `/categories/${id}`,
+    method: 'delete'
+  })
+}
+
+export function updateCategoryStatus(id, status) {
+  const formData = new FormData()
+  formData.append('status', status)
+
+  return request({
+    url: `/categories/${id}/status`,
+    method: 'post',
+    data: formData
+  })
+}
+
 // 新增影片
 export function createVideo(data) {
   const formData = new FormData()
@@ -24,6 +85,9 @@ export function createVideo(data) {
   formData.append('cover_url', data.cover_url)
   formData.append('description', data.description || '')
   formData.append('status', data.status)
+  if (data.category_id !== undefined && data.category_id !== null && data.category_id !== '') {
+    formData.append('category_id', data.category_id)
+  }
 
   return request({
     url: '/videos',
@@ -39,6 +103,9 @@ export function updateVideo(id, data) {
   formData.append('cover_url', data.cover_url)
   formData.append('description', data.description || '')
   formData.append('status', data.status)
+  if (data.category_id !== undefined && data.category_id !== null && data.category_id !== '') {
+    formData.append('category_id', data.category_id)
+  }
 
   return request({
     url: `/videos/${id}`,

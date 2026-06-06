@@ -16,6 +16,10 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
+        <el-menu-item index="/categories">
+          <el-icon><Menu /></el-icon>
+          <span>分类管理</span>
+        </el-menu-item>
         <el-menu-item index="/videos">
           <el-icon><Film /></el-icon>
           <span>影片管理</span>
@@ -56,7 +60,7 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { HomeFilled, VideoCamera, Film, UserFilled, SwitchButton } from '@element-plus/icons-vue'
+import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton } from '@element-plus/icons-vue'
 import { logout } from '../api'
 
 const router = useRouter()
@@ -66,6 +70,9 @@ const username = ref(localStorage.getItem('username') || 'admin')
 
 const activeMenu = computed(() => {
   const path = route.path
+  if (path.startsWith('/categories')) {
+    return '/categories'
+  }
   if (path.startsWith('/videos')) {
     return '/videos'
   }
@@ -75,6 +82,7 @@ const activeMenu = computed(() => {
 const breadcrumbName = computed(() => {
   const path = route.path
   if (path === '/dashboard') return '首页'
+  if (path === '/categories') return '分类管理'
   if (path === '/videos') return '影片管理'
   if (path === '/videos/new') return '新增影片'
   if (path.includes('/edit')) return '编辑影片'

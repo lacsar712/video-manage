@@ -22,6 +22,22 @@
               @clear="handleQuery"
             />
           </el-form-item>
+          <el-form-item label="分类">
+            <el-select
+              v-model="queryForm.category_id"
+              placeholder="请选择分类"
+              clearable
+              style="width: 200px"
+              @clear="handleQuery"
+            >
+              <el-option
+                v-for="cat in categoryOptions"
+                :key="cat.id"
+                :label="cat.name"
+                :value="String(cat.id)"
+              />
+            </el-select>
+          </el-form-item>
           <el-form-item label="状态">
             <el-select
               v-model="queryForm.status"
@@ -44,6 +60,12 @@
       <el-table :data="tableData" border stripe v-loading="loading">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="title" label="影片标题" min-width="200" />
+        <el-table-column prop="category_name" label="分类" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="row.category_name" type="primary" size="small">{{ row.category_name }}</el-tag>
+            <span v-else class="text-muted">未分类</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="cover_url" label="封面" width="120">
           <template #default="{ row }">
             <div v-if="row.cover_url" class="cover-wrapper" @click="handlePreview(getCoverUrl(row.cover_url))">
@@ -107,7 +129,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getVideoList, deleteVideo, updateVideoStatus } from '../api'
+import { getVideoList, deleteVideo, updateVideoStatus, getCategoryList } from '../api'
 
 const router = useRouter()
 const loading = ref(false)
@@ -115,13 +137,24 @@ const tableData = ref([])
 const total = ref(0)
 const previewUrl = ref('')
 const showViewer = ref(false)
+const categoryOptions = ref([])
 
 const queryForm = reactive({
   page: 1,
   page_size: 10,
   keyword: '',
+  category_id: '',
   status: ''
 })
+
+const fetchCategories = async () => {
+  try {
+    const res = await getCategoryList({ status: 1 })
+    categoryOptions.value = res.data.list
+  } catch (error) {
+    console.error('获取分类列表失败：', error)
+  }
+}
 
 // 获取封面完整URL
 const getCoverUrl = (url) => {
@@ -166,6 +199,7 @@ const handleSizeChange = () => {
 
 const handleReset = () => {
   queryForm.keyword = ''
+  queryForm.category_id = ''
   queryForm.status = ''
   handleQuery()
 }
@@ -240,6 +274,7 @@ const handleImageError = (e) => {
 }
 
 onMounted(() => {
+  fetchCategories()
   fetchData()
 })
 </script>
@@ -307,6 +342,11 @@ onMounted(() => {
   background: #f0f0ff;
   color: #94a3b8;
   font-size: 12px;
+}
+
+.text-muted {
+  color: #94a3b8;
+  font-size: 13px;
 }
 
 .video-list :deep(.el-table) {

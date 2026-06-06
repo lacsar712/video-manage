@@ -18,6 +18,22 @@
 					/>
 				</el-form-item>
 
+				<el-form-item label="所属分类" prop="category_id">
+					<el-select
+						v-model="form.category_id"
+						placeholder="请选择分类（选填）"
+						clearable
+						style="width: 100%"
+					>
+						<el-option
+							v-for="cat in categoryOptions"
+							:key="cat.id"
+							:label="cat.name"
+							:value="cat.id"
+						/>
+					</el-select>
+				</el-form-item>
+
 				<el-form-item label="封面图片" prop="cover_url">
 					<el-upload
 						class="cover-uploader"
@@ -70,15 +86,15 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import { getVideoDetail, createVideo, updateVideo } from '../api'
+import { getVideoDetail, createVideo, updateVideo, getCategoryList } from '../api'
 
 const router = useRouter()
 const route = useRoute()
 const formRef = ref(null)
 const loading = ref(false)
 const isEdit = ref(false)
+const categoryOptions = ref([])
 
-// 上传配置
 const uploadAction = computed(() => {
 	const baseURL = import.meta.env.VITE_API_BASE_URL || ''
 	return baseURL ? `${baseURL}/api/upload/cover` : '/api/upload/cover'
@@ -91,10 +107,20 @@ const uploadHeaders = computed(() => {
 
 const form = reactive({
 	title: '',
+	category_id: null,
 	cover_url: '',
 	description: '',
 	status: 1,
 })
+
+const fetchCategories = async () => {
+	try {
+		const res = await getCategoryList({ status: 1 })
+		categoryOptions.value = res.data.list
+	} catch (error) {
+		console.error('获取分类列表失败：', error)
+	}
+}
 
 // 获取封面完整URL
 const getCoverUrl = (url) => {
@@ -157,9 +183,9 @@ const fetchDetail = async () => {
 	loading.value = true
 	try {
 		const res = await getVideoDetail(id)
-		// 确保 status 为数字类型，避免字符串 "1"/"0" 导致单选框不选中
 		const data = res.data
 		data.status = parseInt(data.status)
+		data.category_id = data.category_id ? parseInt(data.category_id) : null
 		Object.assign(form, data)
 	} catch (error) {
 		console.error('获取详情失败：', error)
@@ -199,6 +225,7 @@ const handleCancel = () => {
 }
 
 onMounted(() => {
+	fetchCategories()
 	isEdit.value = !!route.params.id
 	if (isEdit.value) {
 		fetchDetail()

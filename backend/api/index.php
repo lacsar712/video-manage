@@ -76,6 +76,13 @@ try {
         exit;
     }
 
+    // 分类管理
+    if (strpos($path, 'categories') === 0) {
+        require __DIR__ . '/routes/categories.php';
+        handleCategoryRequest($path, $method);
+        exit;
+    }
+
     // 影片管理
     if (strpos($path, 'videos') === 0) {
         require __DIR__ . '/routes/videos.php';
@@ -85,7 +92,7 @@ try {
 
     // 播放源管理
     if (strpos($path, 'sources') === 0) {
-        require __DIR__ . '/routes/sources.php';
+ require __DIR__ . '/routes/sources.php';
         handleSourceRequest($path, $method);
         exit;
     }
