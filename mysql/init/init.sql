@@ -47,11 +47,28 @@ CREATE TABLE IF NOT EXISTS video (
     title VARCHAR(200) NOT NULL,
     cover_url VARCHAR(255) NOT NULL,
     description TEXT,
+    type VARCHAR(20) NOT NULL DEFAULT 'movie' COMMENT 'movie电影 series剧集',
     status TINYINT NOT NULL DEFAULT 1 COMMENT '1上架 0下架',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_status (status),
-    INDEX idx_category_id (category_id)
+    INDEX idx_category_id (category_id),
+    INDEX idx_type (type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 表4-1：video_episode（剧集分集）
+CREATE TABLE IF NOT EXISTS video_episode (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    video_id BIGINT NOT NULL COMMENT '影片ID',
+    episode_no INT NOT NULL COMMENT '集号',
+    title VARCHAR(200) DEFAULT NULL COMMENT '分集标题',
+    m3u8_url VARCHAR(500) DEFAULT NULL COMMENT 'M3U8播放地址',
+    duration_seconds INT DEFAULT NULL COMMENT '时长（秒）',
+    status TINYINT NOT NULL DEFAULT 1 COMMENT '1启用 0禁用',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_video_episode (video_id, episode_no),
+    INDEX idx_video_id (video_id),
+    INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 表5：video_source（播放源）

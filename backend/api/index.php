@@ -93,8 +93,15 @@ try {
 
     // 播放源管理
     if (strpos($path, 'sources') === 0) {
- require __DIR__ . '/routes/sources.php';
+        require __DIR__ . '/routes/sources.php';
         handleSourceRequest($path, $method);
+        exit;
+    }
+
+    // 分集管理
+    if (strpos($path, 'episodes') === 0) {
+        require __DIR__ . '/routes/episodes.php';
+        handleEpisodeRequest($path, $method);
         exit;
     }
 

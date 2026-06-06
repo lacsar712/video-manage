@@ -63,6 +63,21 @@
 					/>
 				</el-form-item>
 
+				<el-form-item label="影片类型" prop="type">
+					<el-radio-group v-model="form.type" size="large" @change="handleTypeChange">
+						<el-radio label="movie" border>电影</el-radio>
+						<el-radio label="series" border>剧集</el-radio>
+					</el-radio-group>
+					<div v-if="typeWarningVisible" class="type-warning">
+						<el-alert
+							type="warning"
+							:closable="false"
+							title="切换为电影类型后，「分集管理」入口将被隐藏，已有的分集数据不会被自动删除。"
+							show-icon
+						/>
+					</div>
+				</el-form-item>
+
 				<el-form-item label="状态" prop="status">
 					<el-radio-group v-model="form.status" size="large">
 						<el-radio :label="1" border>上架</el-radio>
@@ -94,6 +109,7 @@ const formRef = ref(null)
 const loading = ref(false)
 const isEdit = ref(false)
 const categoryOptions = ref([])
+const typeWarningVisible = ref(false)
 
 const uploadAction = computed(() => {
 	const baseURL = import.meta.env.VITE_API_BASE_URL || ''
@@ -110,6 +126,7 @@ const form = reactive({
 	category_id: null,
 	cover_url: '',
 	description: '',
+	type: 'movie',
 	status: 1,
 })
 
@@ -171,9 +188,18 @@ const rules = {
 		{ required: true, message: '请输入影片标题', trigger: 'blur' },
 		{ min: 1, max: 200, message: '标题长度必须在1-200个字符之间', trigger: 'blur' },
 	],
+	type: [{ required: true, message: '请选择影片类型', trigger: 'change' }],
 	cover_url: [{ required: true, message: '请上传影片封面', trigger: 'change' }],
 	description: [{ max: 1000, message: '描述最多1000个字符', trigger: 'blur' }],
 	status: [{ required: true, message: '请选择状态', trigger: 'change' }],
+}
+
+const handleTypeChange = (val) => {
+	if (val === 'movie' && isEdit.value) {
+		typeWarningVisible.value = true
+	} else {
+		typeWarningVisible.value = false
+	}
 }
 
 const fetchDetail = async () => {
@@ -186,6 +212,7 @@ const fetchDetail = async () => {
 		const data = res.data
 		data.status = parseInt(data.status)
 		data.category_id = data.category_id ? parseInt(data.category_id) : null
+		data.type = data.type || 'movie'
 		Object.assign(form, data)
 	} catch (error) {
 		console.error('获取详情失败：', error)
@@ -297,5 +324,9 @@ onMounted(() => {
 .video-form :deep(.el-button--primary:hover) {
 	background: #4f46e5;
 	border-color: #4f46e5;
+}
+
+.type-warning {
+	margin-top: 10px;
 }
 </style>

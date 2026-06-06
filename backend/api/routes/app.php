@@ -18,7 +18,7 @@ function getAppVideoList() {
 
         // 查询列表
         $stmt = $db->prepare("
-            SELECT id, title, cover_url, description, created_at
+            SELECT id, title, cover_url, description, type, created_at
             FROM video
             WHERE status = 1
             ORDER BY id DESC
@@ -53,7 +53,7 @@ function getAppVideoDetail($id) {
 
         // 查询影片（只返回上架的）
         $stmt = $db->prepare("
-            SELECT id, title, cover_url, description, created_at
+            SELECT id, title, cover_url, description, type, created_at
             FROM video
             WHERE id = ? AND status = 1
         ");
@@ -110,6 +110,47 @@ function getAppVideoSources($id) {
     }
 }
 
+// APP API - 获取剧集分集列表
+function getAppVideoEpisodes($id) {
+    validateInt($id, '影片ID');
+
+    try {
+        $db = getDB();
+
+        $stmt = $db->prepare("SELECT id, title, type FROM video WHERE id = ? AND status = 1");
+        $stmt->execute([$id]);
+        $video = $stmt->fetch();
+
+        if (!$video) {
+            error('影片不存在或已下架', 404);
+        }
+
+        $stmt = $db->prepare("
+            SELECT id, episode_no, title, m3u8_url, duration_seconds
+            FROM video_episode
+            WHERE video_id = ? AND status = 1
+            ORDER BY episode_no ASC
+        ");
+        $stmt->execute([$id]);
+        $episodes = $stmt->fetchAll();
+
+        foreach ($episodes as &$item) {
+            $item['episode_no'] = intval($item['episode_no']);
+            $item['duration_seconds'] = $item['duration_seconds'] ? intval($item['duration_seconds']) : null;
+        }
+
+        success([
+            'video_id' => $video['id'],
+            'video_title' => $video['title'],
+            'video_type' => $video['type'],
+            'episodes' => $episodes
+        ]);
+
+    } catch (Exception $e) {
+        error('查询失败：' . $e->getMessage());
+    }
+}
+
 // 处理APP请求
 function handleAppRequest($path, $method) {
     // 解析路径
@@ -124,6 +165,9 @@ function handleAppRequest($path, $method) {
     } elseif ($method === 'GET' && count($parts) === 4 && $parts[1] === 'videos' && $parts[3] === 'sources') {
         // 获取播放源列表
         getAppVideoSources($parts[2]);
+    } elseif ($method === 'GET' && count($parts) === 4 && $parts[1] === 'videos' && $parts[3] === 'episodes') {
+        // 获取分集列表
+        getAppVideoEpisodes($parts[2]);
     } else {
         error('接口不存在', 404);
     }

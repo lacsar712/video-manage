@@ -40,7 +40,7 @@ function getVideoList() {
         $total = $stmt->fetch()['total'];
 
         $stmt = $db->prepare("
-            SELECT v.id, v.category_id, v.title, v.cover_url, v.description, v.status,
+            SELECT v.id, v.category_id, v.title, v.cover_url, v.description, v.type, v.status,
                    v.created_at, v.updated_at, vc.name as category_name
             FROM video v
             LEFT JOIN video_category vc ON v.category_id = vc.id
@@ -100,6 +100,7 @@ function createVideo() {
     $title = $_POST['title'] ?? '';
     $coverUrl = $_POST['cover_url'] ?? '';
     $description = $_POST['description'] ?? '';
+    $type = $_POST['type'] ?? 'movie';
     $status = $_POST['status'] ?? 1;
     $categoryId = $_POST['category_id'] ?? '';
 
@@ -111,6 +112,10 @@ function createVideo() {
 
     if (!empty($description)) {
         validateLength($description, 0, 1000, '影片描述');
+    }
+
+    if (!in_array($type, ['movie', 'series'])) {
+        error('类型值必须为 movie 或 series');
     }
 
     if (!in_array($status, [0, 1, '0', '1'])) {
@@ -137,16 +142,17 @@ function createVideo() {
         }
 
         $stmt = $db->prepare("
-            INSERT INTO video (category_id, title, cover_url, description, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+            INSERT INTO video (category_id, title, cover_url, description, type, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
         ");
-        $stmt->execute([$categoryId, $title, $coverUrl, $description, $status]);
+        $stmt->execute([$categoryId, $title, $coverUrl, $description, $type, $status]);
 
         $videoId = $db->lastInsertId();
 
         writeAuditLog('create', 'video', $videoId, [
             'title' => $title,
             'category_id' => $categoryId,
+            'type' => $type,
             'status' => $status
         ]);
 
@@ -163,6 +169,7 @@ function updateVideo($id) {
     $title = $_POST['title'] ?? '';
     $coverUrl = $_POST['cover_url'] ?? '';
     $description = $_POST['description'] ?? '';
+    $type = $_POST['type'] ?? '';
     $status = $_POST['status'] ?? '';
     $categoryId = $_POST['category_id'] ?? '';
 
@@ -175,6 +182,10 @@ function updateVideo($id) {
 
     if (!empty($description)) {
         validateLength($description, 0, 1000, '影片描述');
+    }
+
+    if ($type !== '' && !in_array($type, ['movie', 'series'])) {
+        error('类型值必须为 movie 或 series');
     }
 
     if (!in_array($status, [0, 1, '0', '1'])) {
@@ -207,12 +218,16 @@ function updateVideo($id) {
             }
         }
 
+        if ($type === '') {
+            $type = $oldVideo['type'];
+        }
+
         $stmt = $db->prepare("
             UPDATE video
-            SET category_id = ?, title = ?, cover_url = ?, description = ?, status = ?, updated_at = NOW()
+            SET category_id = ?, title = ?, cover_url = ?, description = ?, type = ?, status = ?, updated_at = NOW()
             WHERE id = ?
         ");
-        $stmt->execute([$categoryId, $title, $coverUrl, $description, $status, $id]);
+        $stmt->execute([$categoryId, $title, $coverUrl, $description, $type, $status, $id]);
 
         writeAuditLog('update', 'video', $id, [
             'old' => [
@@ -220,6 +235,7 @@ function updateVideo($id) {
                 'category_id' => $oldVideo['category_id'],
                 'cover_url' => $oldVideo['cover_url'],
                 'description' => $oldVideo['description'],
+                'type' => $oldVideo['type'],
                 'status' => intval($oldVideo['status'])
             ],
             'new' => [
@@ -227,6 +243,7 @@ function updateVideo($id) {
                 'category_id' => $categoryId,
                 'cover_url' => $coverUrl,
                 'description' => $description,
+                'type' => $type,
                 'status' => $status
             ]
         ]);
@@ -259,6 +276,10 @@ function deleteVideo($id) {
 
             // 删除播放源
             $stmt = $db->prepare("DELETE FROM video_source WHERE video_id = ?");
+            $stmt->execute([$id]);
+
+            // 删除分集
+            $stmt = $db->prepare("DELETE FROM video_episode WHERE video_id = ?");
             $stmt->execute([$id]);
 
             // 删除影片

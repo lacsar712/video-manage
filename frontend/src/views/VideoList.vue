@@ -66,6 +66,13 @@
             <span v-else class="text-muted">未分类</span>
           </template>
         </el-table-column>
+        <el-table-column prop="type" label="类型" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.type === 'series' ? 'warning' : 'success'" size="small">
+              {{ row.type === 'series' ? '剧集' : '电影' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="cover_url" label="封面" width="120">
           <template #default="{ row }">
             <div v-if="row.cover_url" class="cover-wrapper" @click="handlePreview(getCoverUrl(row.cover_url))">
@@ -89,10 +96,19 @@
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="180" />
-        <el-table-column label="操作" width="300" fixed="right">
+        <el-table-column label="操作" width="400" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button size="small" @click="handleSources(row)">播放源</el-button>
+            <el-button
+              v-if="row.type === 'series'"
+              size="small"
+              type="primary"
+              plain
+              @click="handleEpisodes(row)"
+            >
+              分集管理
+            </el-button>
             <el-button
               size="small"
               :type="row.status == 1 ? 'warning' : 'success'"
@@ -172,7 +188,10 @@ const fetchData = async () => {
   loading.value = true
   try {
     const res = await getVideoList(queryForm)
-    tableData.value = res.data.list
+    tableData.value = res.data.list.map(item => ({
+      ...item,
+      type: item.type || 'movie'
+    }))
     total.value = res.data.total
   } catch (error) {
     console.error('获取列表失败：', error)
@@ -214,6 +233,10 @@ const handleEdit = (row) => {
 
 const handleSources = (row) => {
   router.push(`/videos/${row.id}/sources`)
+}
+
+const handleEpisodes = (row) => {
+  router.push(`/videos/${row.id}/episodes`)
 }
 
 const handleToggleStatus = async (row) => {

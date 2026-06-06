@@ -45,6 +45,11 @@ const routes = [
         component: () => import('../views/VideoSources.vue')
       },
       {
+        path: 'videos/:id/episodes',
+        name: 'VideoEpisodes',
+        component: () => import('../views/VideoEpisodes.vue')
+      },
+      {
         path: 'admin-users',
         name: 'AdminUserManagement',
         component: () => import('../views/AdminUserManagement.vue'),
