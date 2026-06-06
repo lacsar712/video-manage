@@ -175,6 +175,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Fire } from '@element-plus/icons-vue'
 import { getVideoList, deleteVideo, updateVideoStatus, getCategoryList, getAppHotKeywords, recordHotKeywordClick } from '../api'
+import { loadSystemConfig, getDefaultPageSize } from '../utils/systemConfig'
 
 const router = useRouter()
 const loading = ref(false)
@@ -364,7 +365,9 @@ const handleImageError = (e) => {
   e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23f5f5f5" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3E加载失败%3C/text%3E%3C/svg%3E'
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadSystemConfig()
+  queryForm.page_size = getDefaultPageSize()
   fetchCategories()
   fetchHotKeywords()
   fetchData()

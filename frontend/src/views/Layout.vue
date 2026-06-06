@@ -44,6 +44,10 @@
           <el-icon><ChatDotRound /></el-icon>
           <span>用户反馈</span>
         </el-menu-item>
+        <el-menu-item index="/system-config">
+          <el-icon><Setting /></el-icon>
+          <span>系统配置</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -80,8 +84,10 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton, User, Document, Picture, ChatDotRound, HotWater } from '@element-plus/icons-vue'
+import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton, User, Document, Picture, ChatDotRound, HotWater, Setting } from '@element-plus/icons-vue'
 import { logout } from '../api'
+import { loadSystemConfig } from '../utils/systemConfig'
+import { onMounted } from 'vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -113,6 +119,9 @@ const activeMenu = computed(() => {
   if (path.startsWith('/feedback')) {
     return '/feedback'
   }
+  if (path.startsWith('/system-config')) {
+    return '/system-config'
+  }
   return path
 })
 
@@ -127,6 +136,7 @@ const breadcrumbName = computed(() => {
   if (path === '/admin-users') return '账号管理'
   if (path === '/audit-logs') return '操作日志'
   if (path === '/feedback') return '用户反馈'
+  if (path === '/system-config') return '系统配置'
   if (path.includes('/edit')) return '编辑影片'
   if (path.includes('/sources')) return '播放源管理'
   return ''
@@ -153,6 +163,10 @@ const handleLogout = async () => {
     }
   }
 }
+
+onMounted(() => {
+  loadSystemConfig()
+})
 </script>
 
 <style scoped>

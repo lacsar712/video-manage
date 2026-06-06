@@ -231,3 +231,26 @@ INSERT INTO hot_keyword (keyword, sort_order, status, click_count, created_at, u
 ('悬疑推理', 6, 1, 5420, NOW(), NOW()),
 ('未来都市', 7, 0, 4310, NOW(), NOW()),
 ('魔法学院', 8, 1, 3200, NOW(), NOW());
+
+-- 表11：system_config（系统配置）
+CREATE TABLE IF NOT EXISTS system_config (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    config_key VARCHAR(100) UNIQUE NOT NULL COMMENT '配置键（唯一）',
+    config_value TEXT COMMENT '配置值',
+    description VARCHAR(500) DEFAULT NULL COMMENT '配置描述',
+    config_group VARCHAR(50) NOT NULL DEFAULT 'basic' COMMENT '分组：basic基础/list列表/security安全',
+    value_type VARCHAR(20) NOT NULL DEFAULT 'string' COMMENT '值类型：string/number/boolean/email',
+    is_sensitive TINYINT NOT NULL DEFAULT 0 COMMENT '是否敏感（仅super可见/编辑）',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '排序',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_config_key (config_key),
+    INDEX idx_config_group (config_group)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 插入系统配置初始数据
+INSERT INTO system_config (config_key, config_value, description, config_group, value_type, is_sensitive, sort_order) VALUES
+('site_name', '影视管理平台', '站点名称，显示在后台页面标题等位置', 'basic', 'string', 0, 1),
+('support_email', 'support@example.com', '客服邮箱，展示给用户用于联系支持', 'basic', 'email', 0, 2),
+('default_page_size', '20', '后台列表默认每页显示条数', 'list', 'number', 0, 1),
+('enable_recommend_sort', '1', '是否开启推荐排序功能（1开启 0关闭）', 'list', 'boolean', 0, 2),
+('login_fail_lock_threshold', '5', '管理员登录失败锁定阈值（超过此次数账号将被临时锁定）', 'security', 'number', 1, 1);

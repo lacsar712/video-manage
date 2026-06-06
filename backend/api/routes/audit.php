@@ -134,7 +134,8 @@ function getAuditResourceTypes() {
     $types = [
         ['value' => 'video', 'label' => '影片'],
         ['value' => 'source', 'label' => '播放源'],
-        ['value' => 'auth', 'label' => '认证']
+        ['value' => 'auth', 'label' => '认证'],
+        ['value' => 'system_config', 'label' => '系统配置']
     ];
 
     success($types);

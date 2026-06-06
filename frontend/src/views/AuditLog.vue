@@ -179,6 +179,7 @@ import {
   getAuditActions,
   getAuditResourceTypes
 } from '../api'
+import { loadSystemConfig, getDefaultPageSize } from '../utils/systemConfig'
 
 const loading = ref(false)
 const tableData = ref([])
@@ -309,7 +310,9 @@ const formatSummary = (summary) => {
   return JSON.stringify(summary, null, 2)
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadSystemConfig()
+  queryForm.page_size = getDefaultPageSize()
   fetchOptions()
   fetchData()
 })

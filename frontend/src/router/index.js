@@ -74,6 +74,11 @@ const routes = [
         path: 'feedback',
         name: 'UserFeedback',
         component: () => import('../views/UserFeedback.vue')
+      },
+      {
+        path: 'system-config',
+        name: 'SystemConfig',
+        component: () => import('../views/SystemConfig.vue')
       }
     ]
   }

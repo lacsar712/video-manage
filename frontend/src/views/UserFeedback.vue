@@ -268,6 +268,7 @@ import {
   createFeedback,
   updateFeedback
 } from '../api'
+import { loadSystemConfig, getDefaultPageSize } from '../utils/systemConfig'
 
 const loading = ref(false)
 const tableData = ref([])
@@ -494,7 +495,9 @@ const getChannelLabel = (channel) => {
   return map[channel] || channel
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadSystemConfig()
+  queryForm.page_size = getDefaultPageSize()
   fetchOptions()
   fetchData()
 })

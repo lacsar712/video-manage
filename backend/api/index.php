@@ -133,6 +133,13 @@ try {
         exit;
     }
 
+    // 系统配置管理
+    if (strpos($path, 'system-config') === 0) {
+        require __DIR__ . '/routes/system_config.php';
+        handleSystemConfigRequest($path, $method, $tokenData);
+        exit;
+    }
+
     // 文件上传
     if (strpos($path, 'upload/') === 0) {
         require __DIR__ . '/routes/upload.php';

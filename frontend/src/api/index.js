@@ -596,3 +596,26 @@ export function recordHotKeywordClick(id) {
     method: 'post'
   })
 }
+
+export function getSystemConfigList() {
+  return request({
+    url: '/system-config',
+    method: 'get'
+  })
+}
+
+export function batchUpdateSystemConfig(items) {
+  return request({
+    url: '/system-config/batch-update',
+    method: 'post',
+    data: { items },
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
+
+export function getPublicSystemConfig() {
+  return request({
+    url: '/system-config/public',
+    method: 'get'
+  })
+}

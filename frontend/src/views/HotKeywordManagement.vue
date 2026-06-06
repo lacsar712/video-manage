@@ -245,6 +245,7 @@
 import { ref, reactive, onMounted, computed, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Rank, Refresh, Search, Fire } from '@element-plus/icons-vue'
+import { loadSystemConfig, getDefaultPageSize } from '../utils/systemConfig'
 import {
   getHotKeywordList,
   getHotKeywordDetail,
@@ -551,7 +552,9 @@ const onDragEnd = () => {
   dragData.dropIndex = -1
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadSystemConfig()
+  queryForm.page_size = getDefaultPageSize()
   fetchData()
 })
 </script>
