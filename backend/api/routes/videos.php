@@ -7,6 +7,8 @@ function getVideoList() {
     $keyword = $_GET['keyword'] ?? '';
     $categoryId = $_GET['category_id'] ?? '';
     $actorId = $_GET['actor_id'] ?? '';
+    $region = $_GET['region'] ?? '';
+    $language = $_GET['language'] ?? '';
 
     $page = max(1, $page);
     $pageSize = min(100, max(1, $pageSize));
@@ -18,6 +20,7 @@ function getVideoList() {
         $where = [];
         $params = [];
         $joinClause = '';
+        $joinCount = 0;
 
         if ($status !== '') {
             $where[] = "v.status = ?";
@@ -37,9 +40,25 @@ function getVideoList() {
 
         if ($actorId !== '') {
             validateInt($actorId, '演员ID');
-            $joinClause = "INNER JOIN video_actor va ON v.id = va.video_id";
+            $joinClause .= " INNER JOIN video_actor va ON v.id = va.video_id";
             $where[] = "va.actor_id = ?";
             $params[] = $actorId;
+        }
+
+        if ($region !== '') {
+            validateInt($region, '地区标签ID');
+            $joinClause .= " INNER JOIN video_video_tag vvt_r ON v.id = vvt_r.video_id";
+            $joinClause .= " INNER JOIN video_tag vt_r ON vvt_r.tag_id = vt_r.id AND vt_r.type = 'region'";
+            $where[] = "vt_r.id = ?";
+            $params[] = $region;
+        }
+
+        if ($language !== '') {
+            validateInt($language, '语言标签ID');
+            $joinClause .= " INNER JOIN video_video_tag vvt_l ON v.id = vvt_l.video_id";
+            $joinClause .= " INNER JOIN video_tag vt_l ON vvt_l.tag_id = vt_l.id AND vt_l.type = 'language'";
+            $where[] = "vt_l.id = ?";
+            $params[] = $language;
         }
 
         $whereClause = empty($where) ? '' : 'WHERE ' . implode(' AND ', $where);
@@ -61,9 +80,42 @@ function getVideoList() {
         $stmt->execute($params);
         $list = $stmt->fetchAll();
 
+        $videoIds = [];
+        foreach ($list as $item) {
+            $videoIds[] = $item['id'];
+        }
+
+        $tagsMap = [];
+        if (!empty($videoIds)) {
+            $inPlaceholders = implode(',', array_fill(0, count($videoIds), '?'));
+            $stmt = $db->prepare("
+                SELECT vvt.video_id, vt.id, vt.name, vt.type
+                FROM video_video_tag vvt
+                INNER JOIN video_tag vt ON vvt.tag_id = vt.id
+                WHERE vvt.video_id IN ({$inPlaceholders})
+                ORDER BY vt.type ASC, vt.sort_order ASC, vt.id ASC
+            ");
+            $stmt->execute($videoIds);
+            $tagRows = $stmt->fetchAll();
+            foreach ($tagRows as $row) {
+                $vid = $row['video_id'];
+                if (!isset($tagsMap[$vid])) {
+                    $tagsMap[$vid] = ['regions' => [], 'languages' => []];
+                }
+                if ($row['type'] === 'region') {
+                    $tagsMap[$vid]['regions'][] = ['id' => $row['id'], 'name' => $row['name']];
+                } elseif ($row['type'] === 'language') {
+                    $tagsMap[$vid]['languages'][] = ['id' => $row['id'], 'name' => $row['name']];
+                }
+            }
+        }
+
         foreach ($list as &$item) {
             $item['created_at'] = formatDateTime($item['created_at']);
             $item['updated_at'] = formatDateTime($item['updated_at']);
+            $vid = $item['id'];
+            $item['regions'] = $tagsMap[$vid]['regions'] ?? [];
+            $item['languages'] = $tagsMap[$vid]['languages'] ?? [];
         }
 
         success([
@@ -110,6 +162,33 @@ function getVideoDetail($id) {
         $actors = $stmt->fetchAll();
         $video['actors'] = $actors;
 
+        $stmt = $db->prepare("
+            SELECT vt.id, vt.name, vt.type
+            FROM video_video_tag vvt
+            INNER JOIN video_tag vt ON vvt.tag_id = vt.id
+            WHERE vvt.video_id = ?
+            ORDER BY vt.type ASC, vt.sort_order ASC, vt.id ASC
+        ");
+        $stmt->execute([$id]);
+        $tags = $stmt->fetchAll();
+        $regions = [];
+        $languages = [];
+        $regionIds = [];
+        $languageIds = [];
+        foreach ($tags as $tag) {
+            if ($tag['type'] === 'region') {
+                $regions[] = ['id' => $tag['id'], 'name' => $tag['name']];
+                $regionIds[] = $tag['id'];
+            } elseif ($tag['type'] === 'language') {
+                $languages[] = ['id' => $tag['id'], 'name' => $tag['name']];
+                $languageIds[] = $tag['id'];
+            }
+        }
+        $video['regions'] = $regions;
+        $video['languages'] = $languages;
+        $video['region_ids'] = $regionIds;
+        $video['language_ids'] = $languageIds;
+
         success($video);
 
     } catch (Exception $e) {
@@ -147,6 +226,41 @@ function saveVideoActors($db, $videoId, $actorsJson) {
     }
 }
 
+function saveVideoTags($db, $videoId, $tagIdsJson) {
+    if ($tagIdsJson === null || $tagIdsJson === '') {
+        $stmt = $db->prepare("DELETE FROM video_video_tag WHERE video_id = ?");
+        $stmt->execute([$videoId]);
+        return;
+    }
+    $tagIds = json_decode($tagIdsJson, true);
+    if (!is_array($tagIds)) {
+        $stmt = $db->prepare("DELETE FROM video_video_tag WHERE video_id = ?");
+        $stmt->execute([$videoId]);
+        return;
+    }
+
+    $tagIds = array_unique(array_map('intval', $tagIds));
+    $tagIds = array_filter($tagIds, function($id) {
+        return $id > 0;
+    });
+
+    $stmt = $db->prepare("DELETE FROM video_video_tag WHERE video_id = ?");
+    $stmt->execute([$videoId]);
+
+    if (empty($tagIds)) {
+        return;
+    }
+
+    foreach ($tagIds as $tagId) {
+        $stmt = $db->prepare("
+            INSERT INTO video_video_tag (video_id, tag_id, created_at)
+            VALUES (?, ?, NOW())
+            ON DUPLICATE KEY UPDATE created_at = VALUES(created_at)
+        ");
+        $stmt->execute([$videoId, $tagId]);
+    }
+}
+
 function createVideo() {
     $title = $_POST['title'] ?? '';
     $coverUrl = $_POST['cover_url'] ?? '';
@@ -155,6 +269,8 @@ function createVideo() {
     $status = $_POST['status'] ?? 1;
     $categoryId = $_POST['category_id'] ?? '';
     $actors = $_POST['actors'] ?? null;
+    $regionIds = $_POST['region_ids'] ?? null;
+    $languageIds = $_POST['language_ids'] ?? null;
 
     validateRequired([
         'title' => '影片标题'
@@ -182,6 +298,29 @@ function createVideo() {
         $categoryId = null;
     }
 
+    $allTagIds = [];
+    if ($regionIds !== null && $regionIds !== '') {
+        $regionIdsArr = json_decode($regionIds, true);
+        if (!is_array($regionIdsArr)) {
+            $regionIdsArr = [];
+        }
+        if (count($regionIdsArr) > 3) {
+            error('地区标签最多选择 3 个');
+        }
+        $allTagIds = array_merge($allTagIds, $regionIdsArr);
+    }
+    if ($languageIds !== null && $languageIds !== '') {
+        $languageIdsArr = json_decode($languageIds, true);
+        if (!is_array($languageIdsArr)) {
+            $languageIdsArr = [];
+        }
+        if (count($languageIdsArr) > 3) {
+            error('语言标签最多选择 3 个');
+        }
+        $allTagIds = array_merge($allTagIds, $languageIdsArr);
+    }
+    $allTagIdsJson = !empty($allTagIds) ? json_encode($allTagIds) : null;
+
     try {
         $db = getDB();
 
@@ -204,6 +343,7 @@ function createVideo() {
         $videoId = $db->lastInsertId();
 
         saveVideoActors($db, $videoId, $actors);
+        saveVideoTags($db, $videoId, $allTagIdsJson);
 
         writeAuditLog('create', 'video', $videoId, [
             'title' => $title,
@@ -234,6 +374,8 @@ function updateVideo($id) {
     $status = $_POST['status'] ?? '';
     $categoryId = $_POST['category_id'] ?? '';
     $actors = $_POST['actors'] ?? null;
+    $regionIds = $_POST['region_ids'] ?? null;
+    $languageIds = $_POST['language_ids'] ?? null;
 
     validateRequired([
         'title' => '影片标题',
@@ -261,6 +403,29 @@ function updateVideo($id) {
     } else {
         $categoryId = null;
     }
+
+    $allTagIds = [];
+    if ($regionIds !== null && $regionIds !== '') {
+        $regionIdsArr = json_decode($regionIds, true);
+        if (!is_array($regionIdsArr)) {
+            $regionIdsArr = [];
+        }
+        if (count($regionIdsArr) > 3) {
+            error('地区标签最多选择 3 个');
+        }
+        $allTagIds = array_merge($allTagIds, $regionIdsArr);
+    }
+    if ($languageIds !== null && $languageIds !== '') {
+        $languageIdsArr = json_decode($languageIds, true);
+        if (!is_array($languageIdsArr)) {
+            $languageIdsArr = [];
+        }
+        if (count($languageIdsArr) > 3) {
+            error('语言标签最多选择 3 个');
+        }
+        $allTagIds = array_merge($allTagIds, $languageIdsArr);
+    }
+    $allTagIdsJson = !empty($allTagIds) ? json_encode($allTagIds) : null;
 
     try {
         $db = getDB();
@@ -294,6 +459,7 @@ function updateVideo($id) {
         $stmt->execute([$categoryId, $title, $coverUrl, $description, $type, $status, $id]);
 
         saveVideoActors($db, $id, $actors);
+        saveVideoTags($db, $id, $allTagIdsJson);
 
         writeAuditLog('update', 'video', $id, [
             'old' => [
@@ -355,6 +521,10 @@ function deleteVideo($id) {
 
             // 删除演员关联
             $stmt = $db->prepare("DELETE FROM video_actor WHERE video_id = ?");
+            $stmt->execute([$id]);
+
+            // 删除标签关联
+            $stmt = $db->prepare("DELETE FROM video_video_tag WHERE video_id = ?");
             $stmt->execute([$id]);
 
             // 删除影片

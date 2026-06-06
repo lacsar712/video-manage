@@ -55,7 +55,7 @@
               v-model="queryForm.category_id"
               placeholder="请选择分类"
               clearable
-              style="width: 200px"
+              style="width: 180px"
               @clear="handleQuery"
             >
               <el-option
@@ -63,6 +63,38 @@
                 :key="cat.id"
                 :label="cat.name"
                 :value="String(cat.id)"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="地区">
+            <el-select
+              v-model="queryForm.region"
+              placeholder="请选择地区"
+              clearable
+              style="width: 180px"
+              @clear="handleQuery"
+            >
+              <el-option
+                v-for="tag in regionTagOptions"
+                :key="tag.id"
+                :label="tag.name"
+                :value="String(tag.id)"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="语言">
+            <el-select
+              v-model="queryForm.language"
+              placeholder="请选择语言"
+              clearable
+              style="width: 180px"
+              @clear="handleQuery"
+            >
+              <el-option
+                v-for="tag in languageTagOptions"
+                :key="tag.id"
+                :label="tag.name"
+                :value="String(tag.id)"
               />
             </el-select>
           </el-form-item>
@@ -101,6 +133,38 @@
           <template #default="{ row }">
             <el-tag v-if="row.category_name" type="primary" size="small">{{ row.category_name }}</el-tag>
             <span v-else class="text-muted">未分类</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="地区" min-width="160">
+          <template #default="{ row }">
+            <div v-if="row.regions && row.regions.length > 0" class="tag-group">
+              <el-tag
+                v-for="tag in row.regions"
+                :key="'r' + tag.id"
+                size="small"
+                type="warning"
+                class="inline-tag"
+              >
+                {{ tag.name }}
+              </el-tag>
+            </div>
+            <span v-else class="text-muted">未设置</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="语言" min-width="160">
+          <template #default="{ row }">
+            <div v-if="row.languages && row.languages.length > 0" class="tag-group">
+              <el-tag
+                v-for="tag in row.languages"
+                :key="'l' + tag.id"
+                size="small"
+                type="success"
+                class="inline-tag"
+              >
+                {{ tag.name }}
+              </el-tag>
+            </div>
+            <span v-else class="text-muted">未设置</span>
           </template>
         </el-table-column>
         <el-table-column prop="type" label="类型" width="100">
@@ -183,7 +247,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Fire } from '@element-plus/icons-vue'
-import { getVideoList, deleteVideo, updateVideoStatus, getCategoryList, getAppHotKeywords, recordHotKeywordClick, getActorDetail } from '../api'
+import { getVideoList, deleteVideo, updateVideoStatus, getCategoryList, getAppHotKeywords, recordHotKeywordClick, getActorDetail, getTagOptions } from '../api'
 import { loadSystemConfig, getDefaultPageSize } from '../utils/systemConfig'
 
 const router = useRouter()
@@ -197,6 +261,8 @@ const categoryOptions = ref([])
 const hotKeywords = ref([])
 const showHotKeywords = ref(false)
 const actorFilterName = ref('')
+const regionTagOptions = ref([])
+const languageTagOptions = ref([])
 
 const queryForm = reactive({
   page: 1,
@@ -204,7 +270,9 @@ const queryForm = reactive({
   keyword: '',
   category_id: '',
   status: '',
-  actor_id: ''
+  actor_id: '',
+  region: '',
+  language: ''
 })
 
 const fetchCategories = async () => {
@@ -222,6 +290,16 @@ const fetchHotKeywords = async () => {
     hotKeywords.value = res.data.list
   } catch (error) {
     console.error('获取热搜词失败：', error)
+  }
+}
+
+const fetchTagOptions = async () => {
+  try {
+    const res = await getTagOptions()
+    regionTagOptions.value = res.data.region_list || []
+    languageTagOptions.value = res.data.language_list || []
+  } catch (error) {
+    console.error('获取标签选项失败：', error)
   }
 }
 
@@ -302,6 +380,8 @@ const handleReset = () => {
   queryForm.category_id = ''
   queryForm.status = ''
   queryForm.actor_id = ''
+  queryForm.region = ''
+  queryForm.language = ''
   actorFilterName.value = ''
   handleQuery()
 }
@@ -402,6 +482,7 @@ onMounted(async () => {
 
   fetchCategories()
   fetchHotKeywords()
+  fetchTagOptions()
   fetchData()
 })
 </script>
@@ -586,5 +667,15 @@ onMounted(async () => {
   color: #94a3b8;
   flex-shrink: 0;
   margin-left: 12px;
+}
+
+.tag-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.inline-tag {
+  margin-right: 0 !important;
 }
 </style>

@@ -307,3 +307,63 @@ INSERT INTO video_actor (video_id, actor_id, role_name, sort_order, created_at) 
 (9, 4, '另一个自己 琳达', 2, NOW()),
 (10, 5, '时间旅行者 亨利', 1, NOW()),
 (10, 2, '女主角 克莱尔', 2, NOW());
+
+-- 表14：video_tag（影片标签：地区/语言）
+CREATE TABLE IF NOT EXISTS video_tag (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL COMMENT '标签名称',
+    type VARCHAR(20) NOT NULL COMMENT '标签类型：region地区/language语言',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '排序',
+    status TINYINT NOT NULL DEFAULT 1 COMMENT '1启用 0禁用',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_name_type (name, type),
+    INDEX idx_type (type),
+    INDEX idx_status (status),
+    INDEX idx_sort_order (sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 表15：video_video_tag（影片-标签关联）
+CREATE TABLE IF NOT EXISTS video_video_tag (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    video_id BIGINT NOT NULL COMMENT '影片ID',
+    tag_id BIGINT NOT NULL COMMENT '标签ID',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_video_tag (video_id, tag_id),
+    INDEX idx_video_id (video_id),
+    INDEX idx_tag_id (tag_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 插入测试标签数据
+INSERT INTO video_tag (name, type, sort_order, status, created_at) VALUES
+('中国大陆', 'region', 1, 1, NOW()),
+('中国香港', 'region', 2, 1, NOW()),
+('中国台湾', 'region', 3, 1, NOW()),
+('美国', 'region', 4, 1, NOW()),
+('日本', 'region', 5, 1, NOW()),
+('韩国', 'region', 6, 1, NOW()),
+('英国', 'region', 7, 1, NOW()),
+('法国', 'region', 8, 1, NOW()),
+('德国', 'region', 9, 0, NOW()),
+('印度', 'region', 10, 1, NOW()),
+('汉语普通话', 'language', 1, 1, NOW()),
+('粤语', 'language', 2, 1, NOW()),
+('英语', 'language', 3, 1, NOW()),
+('日语', 'language', 4, 1, NOW()),
+('韩语', 'language', 5, 1, NOW()),
+('法语', 'language', 6, 1, NOW()),
+('德语', 'language', 7, 0, NOW()),
+('泰语', 'language', 8, 1, NOW());
+
+-- 插入测试影片-标签关联数据
+INSERT INTO video_video_tag (video_id, tag_id) VALUES
+(1, 4), (1, 13),
+(2, 1), (2, 11),
+(3, 1), (3, 11),
+(4, 4), (4, 13),
+(5, 4), (5, 13),
+(6, 1), (6, 11),
+(7, 4), (7, 13),
+(8, 4), (8, 13),
+(9, 4), (9, 13),
+(10, 4), (10, 13);

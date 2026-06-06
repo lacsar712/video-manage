@@ -147,6 +147,13 @@ try {
         exit;
     }
 
+    // 标签管理（地区/语言）
+    if (strpos($path, 'video-tags') === 0) {
+        require __DIR__ . '/routes/video_tags.php';
+        handleTagRequest($path, $method);
+        exit;
+    }
+
     // 文件上传
     if (strpos($path, 'upload/') === 0) {
         require __DIR__ . '/routes/upload.php';

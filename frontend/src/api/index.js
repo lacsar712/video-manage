@@ -162,6 +162,15 @@ export function createVideo(data) {
   if (data.category_id !== undefined && data.category_id !== null && data.category_id !== '') {
     formData.append('category_id', data.category_id)
   }
+  if (data.actors !== undefined && data.actors !== null) {
+    formData.append('actors', data.actors)
+  }
+  if (data.region_ids !== undefined && data.region_ids !== null) {
+    formData.append('region_ids', data.region_ids)
+  }
+  if (data.language_ids !== undefined && data.language_ids !== null) {
+    formData.append('language_ids', data.language_ids)
+  }
 
   return request({
     url: '/videos',
@@ -179,6 +188,15 @@ export function updateVideo(id, data) {
   formData.append('status', data.status)
   if (data.category_id !== undefined && data.category_id !== null && data.category_id !== '') {
     formData.append('category_id', data.category_id)
+  }
+  if (data.actors !== undefined && data.actors !== null) {
+    formData.append('actors', data.actors)
+  }
+  if (data.region_ids !== undefined && data.region_ids !== null) {
+    formData.append('region_ids', data.region_ids)
+  }
+  if (data.language_ids !== undefined && data.language_ids !== null) {
+    formData.append('language_ids', data.language_ids)
   }
 
   return request({
@@ -683,6 +701,74 @@ export function updateActorStatus(id, status) {
 
   return request({
     url: `/actors/${id}/status`,
+    method: 'post',
+    data: formData
+  })
+}
+
+export function getTagList(params) {
+  return request({
+    url: '/video-tags',
+    method: 'get',
+    params
+  })
+}
+
+export function getTagDetail(id) {
+  return request({
+    url: `/video-tags/${id}`,
+    method: 'get'
+  })
+}
+
+export function getTagOptions() {
+  return request({
+    url: '/video-tags/options',
+    method: 'get'
+  })
+}
+
+export function createTag(data) {
+  const formData = new FormData()
+  formData.append('name', data.name)
+  formData.append('type', data.type)
+  formData.append('sort_order', data.sort_order ?? 0)
+  formData.append('status', data.status ?? 1)
+
+  return request({
+    url: '/video-tags',
+    method: 'post',
+    data: formData
+  })
+}
+
+export function updateTag(id, data) {
+  const formData = new FormData()
+  formData.append('name', data.name)
+  formData.append('type', data.type)
+  formData.append('sort_order', data.sort_order ?? 0)
+  formData.append('status', data.status)
+
+  return request({
+    url: `/video-tags/${id}`,
+    method: 'post',
+    data: formData
+  })
+}
+
+export function deleteTag(id) {
+  return request({
+    url: `/video-tags/${id}`,
+    method: 'delete'
+  })
+}
+
+export function updateTagStatus(id, status) {
+  const formData = new FormData()
+  formData.append('status', status)
+
+  return request({
+    url: `/video-tags/${id}/status`,
     method: 'post',
     data: formData
   })

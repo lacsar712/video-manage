@@ -71,6 +71,11 @@ const routes = [
         component: () => import('../views/HotKeywordManagement.vue')
       },
       {
+        path: 'video-tags',
+        name: 'TagManagement',
+        component: () => import('../views/TagManagement.vue')
+      },
+      {
         path: 'audit-logs',
         name: 'AuditLog',
         component: () => import('../views/AuditLog.vue')

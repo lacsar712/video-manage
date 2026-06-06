@@ -36,6 +36,10 @@
           <el-icon><HotWater /></el-icon>
           <span>热搜词</span>
         </el-menu-item>
+        <el-menu-item index="/video-tags">
+          <el-icon><PriceTag /></el-icon>
+          <span>标签管理</span>
+        </el-menu-item>
         <el-menu-item v-if="isSuper" index="/admin-users">
           <el-icon><User /></el-icon>
           <span>账号管理</span>
@@ -88,7 +92,7 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton, User, Document, Picture, ChatDotRound, HotWater, Setting } from '@element-plus/icons-vue'
+import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton, User, Document, Picture, ChatDotRound, HotWater, Setting, PriceTag } from '@element-plus/icons-vue'
 import { logout } from '../api'
 import { loadSystemConfig } from '../utils/systemConfig'
 import { onMounted } from 'vue'
@@ -117,6 +121,9 @@ const activeMenu = computed(() => {
   if (path.startsWith('/hot-keywords')) {
     return '/hot-keywords'
   }
+  if (path.startsWith('/video-tags')) {
+    return '/video-tags'
+  }
   if (path.startsWith('/admin-users')) {
     return '/admin-users'
   }
@@ -141,6 +148,7 @@ const breadcrumbName = computed(() => {
   if (path === '/videos/new') return '新增影片'
   if (path === '/banners') return '轮播图管理'
   if (path === '/hot-keywords') return '热搜词'
+  if (path === '/video-tags') return '标签管理'
   if (path === '/admin-users') return '账号管理'
   if (path === '/audit-logs') return '操作日志'
   if (path === '/feedback') return '用户反馈'

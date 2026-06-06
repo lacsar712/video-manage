@@ -85,6 +85,46 @@
 					</el-radio-group>
 				</el-form-item>
 
+				<el-divider content-position="left">地区与语言</el-divider>
+
+				<el-form-item label="地区标签" prop="regionIds">
+					<el-select
+						v-model="regionIds"
+						multiple
+						filterable
+						placeholder="请选择地区标签（最多3个）"
+						style="width: 100%"
+						@change="handleRegionChange"
+					>
+						<el-option
+							v-for="tag in regionTagOptions"
+							:key="tag.id"
+							:label="tag.name"
+							:value="tag.id"
+						/>
+					</el-select>
+					<div class="form-tip">最多选择 3 个地区标签</div>
+				</el-form-item>
+
+				<el-form-item label="语言标签" prop="languageIds">
+					<el-select
+						v-model="languageIds"
+						multiple
+						filterable
+						placeholder="请选择语言标签（最多3个）"
+						style="width: 100%"
+						@change="handleLanguageChange"
+					>
+						<el-option
+							v-for="tag in languageTagOptions"
+							:key="tag.id"
+							:label="tag.name"
+							:value="tag.id"
+						/>
+					</el-select>
+					<div class="form-tip">最多选择 3 个语言标签</div>
+				</el-form-item>
+
 				<el-divider content-position="left">参演演员</el-divider>
 
 				<el-form-item label="参演演员">
@@ -176,7 +216,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus, UserFilled, Close } from '@element-plus/icons-vue'
-import { getVideoDetail, createVideo, updateVideo, getCategoryList, getActorOptions } from '../api'
+import { getVideoDetail, createVideo, updateVideo, getCategoryList, getActorOptions, getTagOptions } from '../api'
 
 const router = useRouter()
 const route = useRoute()
@@ -188,6 +228,10 @@ const typeWarningVisible = ref(false)
 const actorOptions = ref([])
 const selectedActorIds = ref([])
 const selectedActors = ref([])
+const regionTagOptions = ref([])
+const languageTagOptions = ref([])
+const regionIds = ref([])
+const languageIds = ref([])
 
 const uploadAction = computed(() => {
 	const baseURL = import.meta.env.VITE_API_BASE_URL || ''
@@ -223,6 +267,16 @@ const fetchActorOptions = async () => {
 		actorOptions.value = res.data.list
 	} catch (error) {
 		console.error('获取演员列表失败：', error)
+	}
+}
+
+const fetchTagOptions = async () => {
+	try {
+		const res = await getTagOptions()
+		regionTagOptions.value = res.data.region_list || []
+		languageTagOptions.value = res.data.language_list || []
+	} catch (error) {
+		console.error('获取标签列表失败：', error)
 	}
 }
 
@@ -309,6 +363,20 @@ const removeActor = (index) => {
 	selectedActorIds.value = selectedActorIds.value.filter(id => id !== removedId)
 }
 
+const handleRegionChange = (vals) => {
+	if (vals.length > 3) {
+		regionIds.value = vals.slice(0, 3)
+		ElMessage.warning('地区标签最多选择 3 个')
+	}
+}
+
+const handleLanguageChange = (vals) => {
+	if (vals.length > 3) {
+		languageIds.value = vals.slice(0, 3)
+		ElMessage.warning('语言标签最多选择 3 个')
+	}
+}
+
 const rules = {
 	title: [
 		{ required: true, message: '请输入影片标题', trigger: 'blur' },
@@ -350,6 +418,13 @@ const fetchDetail = async () => {
 			}))
 			selectedActorIds.value = data.actors.map(a => a.id)
 		}
+
+		if (data.region_ids && Array.isArray(data.region_ids)) {
+			regionIds.value = data.region_ids.map(id => Number(id))
+		}
+		if (data.language_ids && Array.isArray(data.language_ids)) {
+			languageIds.value = data.language_ids.map(id => Number(id))
+		}
 	} catch (error) {
 		console.error('获取详情失败：', error)
 		ElMessage.error('获取影片信息失败')
@@ -372,7 +447,9 @@ const handleSubmit = async () => {
 				actors: JSON.stringify(selectedActors.value.map(a => ({
 					actor_id: a.id,
 					role_name: a.role_name || ''
-				})))
+				}))),
+				region_ids: JSON.stringify(regionIds.value),
+				language_ids: JSON.stringify(languageIds.value)
 			}
 
 			if (isEdit.value) {
@@ -398,6 +475,7 @@ const handleCancel = () => {
 onMounted(() => {
 	fetchCategories()
 	fetchActorOptions()
+	fetchTagOptions()
 	isEdit.value = !!route.params.id
 	if (isEdit.value) {
 		fetchDetail()
@@ -545,5 +623,12 @@ onMounted(() => {
 	font-size: 14px;
 	background: #fff;
 	padding: 0 12px;
+}
+
+.form-tip {
+	margin-top: 6px;
+	font-size: 12px;
+	color: #94a3b8;
+	line-height: 1.5;
 }
 </style>
