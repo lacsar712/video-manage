@@ -243,3 +243,32 @@ export function deleteSource(id) {
     method: 'delete'
   })
 }
+
+export function getAuditLogList(params) {
+  return request({
+    url: '/audit-logs',
+    method: 'get',
+    params
+  })
+}
+
+export function getAuditLogDetail(id) {
+  return request({
+    url: `/audit-logs/${id}`,
+    method: 'get'
+  })
+}
+
+export function getAuditActions() {
+  return request({
+    url: '/audit-logs/actions',
+    method: 'get'
+  })
+}
+
+export function getAuditResourceTypes() {
+  return request({
+    url: '/audit-logs/resource-types',
+    method: 'get'
+  })
+}

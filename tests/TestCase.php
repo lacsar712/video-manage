@@ -47,6 +47,7 @@ abstract class TestCase extends BaseTestCase
         $this->db->exec("TRUNCATE TABLE video_category");
         $this->db->exec("TRUNCATE TABLE video");
         $this->db->exec("TRUNCATE TABLE video_source");
+        $this->db->exec("TRUNCATE TABLE audit_log");
         $this->db->exec("SET FOREIGN_KEY_CHECKS = 1");
     }
 

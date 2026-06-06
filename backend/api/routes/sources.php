@@ -91,6 +91,12 @@ function createSource() {
 
         $sourceId = $db->lastInsertId();
 
+        writeAuditLog('create', 'source', $sourceId, [
+            'video_id' => intval($videoId),
+            'source_name' => $sourceName,
+            'm3u8_url' => $m3u8Url
+        ]);
+
         success(['id' => $sourceId], '添加成功');
 
     } catch (Exception $e) {
@@ -126,9 +132,10 @@ function updateSource($id) {
         $db = getDB();
 
         // 检查播放源是否存在
-        $stmt = $db->prepare("SELECT id FROM video_source WHERE id = ?");
+        $stmt = $db->prepare("SELECT * FROM video_source WHERE id = ?");
         $stmt->execute([$id]);
-        if (!$stmt->fetch()) {
+        $oldSource = $stmt->fetch();
+        if (!$oldSource) {
             error('播放源不存在', 404);
         }
 
@@ -139,6 +146,18 @@ function updateSource($id) {
             WHERE id = ?
         ");
         $stmt->execute([$sourceName, $m3u8Url, $id]);
+
+        writeAuditLog('update', 'source', $id, [
+            'video_id' => intval($oldSource['video_id']),
+            'old' => [
+                'source_name' => $oldSource['source_name'],
+                'm3u8_url' => $oldSource['m3u8_url']
+            ],
+            'new' => [
+                'source_name' => $sourceName,
+                'm3u8_url' => $m3u8Url
+            ]
+        ]);
 
         success(null, '更新成功');
 
@@ -155,15 +174,22 @@ function deleteSource($id) {
         $db = getDB();
 
         // 检查播放源是否存在
-        $stmt = $db->prepare("SELECT id FROM video_source WHERE id = ?");
+        $stmt = $db->prepare("SELECT * FROM video_source WHERE id = ?");
         $stmt->execute([$id]);
-        if (!$stmt->fetch()) {
+        $source = $stmt->fetch();
+        if (!$source) {
             error('播放源不存在', 404);
         }
 
         // 删除播放源
         $stmt = $db->prepare("DELETE FROM video_source WHERE id = ?");
         $stmt->execute([$id]);
+
+        writeAuditLog('delete', 'source', $id, [
+            'video_id' => intval($source['video_id']),
+            'source_name' => $source['source_name'],
+            'm3u8_url' => $source['m3u8_url']
+        ]);
 
         success(null, '删除成功');
 

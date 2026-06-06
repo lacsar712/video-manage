@@ -144,6 +144,12 @@ function createVideo() {
 
         $videoId = $db->lastInsertId();
 
+        writeAuditLog('create', 'video', $videoId, [
+            'title' => $title,
+            'category_id' => $categoryId,
+            'status' => $status
+        ]);
+
         success(['id' => $videoId], '添加成功');
 
     } catch (Exception $e) {
@@ -186,9 +192,10 @@ function updateVideo($id) {
     try {
         $db = getDB();
 
-        $stmt = $db->prepare("SELECT id FROM video WHERE id = ?");
+        $stmt = $db->prepare("SELECT * FROM video WHERE id = ?");
         $stmt->execute([$id]);
-        if (!$stmt->fetch()) {
+        $oldVideo = $stmt->fetch();
+        if (!$oldVideo) {
             error('影片不存在', 404);
         }
 
@@ -206,6 +213,23 @@ function updateVideo($id) {
             WHERE id = ?
         ");
         $stmt->execute([$categoryId, $title, $coverUrl, $description, $status, $id]);
+
+        writeAuditLog('update', 'video', $id, [
+            'old' => [
+                'title' => $oldVideo['title'],
+                'category_id' => $oldVideo['category_id'],
+                'cover_url' => $oldVideo['cover_url'],
+                'description' => $oldVideo['description'],
+                'status' => intval($oldVideo['status'])
+            ],
+            'new' => [
+                'title' => $title,
+                'category_id' => $categoryId,
+                'cover_url' => $coverUrl,
+                'description' => $description,
+                'status' => $status
+            ]
+        ]);
 
         success(null, '更新成功');
 
@@ -226,9 +250,10 @@ function deleteVideo($id) {
 
         try {
             // 检查影片是否存在
-            $stmt = $db->prepare("SELECT id FROM video WHERE id = ?");
+            $stmt = $db->prepare("SELECT * FROM video WHERE id = ?");
             $stmt->execute([$id]);
-            if (!$stmt->fetch()) {
+            $video = $stmt->fetch();
+            if (!$video) {
                 error('影片不存在', 404);
             }
 
@@ -239,6 +264,12 @@ function deleteVideo($id) {
             // 删除影片
             $stmt = $db->prepare("DELETE FROM video WHERE id = ?");
             $stmt->execute([$id]);
+
+            writeAuditLog('delete', 'video', $id, [
+                'title' => $video['title'],
+                'category_id' => $video['category_id'],
+                'status' => intval($video['status'])
+            ]);
 
             // 提交事务
             $db->commit();
@@ -273,15 +304,23 @@ function updateVideoStatus($id) {
         $db = getDB();
 
         // 检查影片是否存在
-        $stmt = $db->prepare("SELECT id FROM video WHERE id = ?");
+        $stmt = $db->prepare("SELECT * FROM video WHERE id = ?");
         $stmt->execute([$id]);
-        if (!$stmt->fetch()) {
+        $video = $stmt->fetch();
+        if (!$video) {
             error('影片不存在', 404);
         }
 
         // 更新状态
         $stmt = $db->prepare("UPDATE video SET status = ?, updated_at = NOW() WHERE id = ?");
         $stmt->execute([$status, $id]);
+
+        $action = $status == 1 ? 'publish' : 'unpublish';
+        writeAuditLog($action, 'video', $id, [
+            'title' => $video['title'],
+            'old_status' => intval($video['status']),
+            'new_status' => intval($status)
+        ]);
 
         success(null, $status == 1 ? '上架成功' : '下架成功');
 

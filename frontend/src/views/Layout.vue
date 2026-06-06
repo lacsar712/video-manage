@@ -28,6 +28,10 @@
           <el-icon><User /></el-icon>
           <span>账号管理</span>
         </el-menu-item>
+        <el-menu-item index="/audit-logs">
+          <el-icon><Document /></el-icon>
+          <span>操作日志</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -64,7 +68,7 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton, User } from '@element-plus/icons-vue'
+import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton, User, Document } from '@element-plus/icons-vue'
 import { logout } from '../api'
 
 const router = useRouter()
@@ -85,6 +89,9 @@ const activeMenu = computed(() => {
   if (path.startsWith('/admin-users')) {
     return '/admin-users'
   }
+  if (path.startsWith('/audit-logs')) {
+    return '/audit-logs'
+  }
   return path
 })
 
@@ -95,6 +102,7 @@ const breadcrumbName = computed(() => {
   if (path === '/videos') return '影片管理'
   if (path === '/videos/new') return '新增影片'
   if (path === '/admin-users') return '账号管理'
+  if (path === '/audit-logs') return '操作日志'
   if (path.includes('/edit')) return '编辑影片'
   if (path.includes('/sources')) return '播放源管理'
   return ''

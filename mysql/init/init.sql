@@ -91,6 +91,23 @@ INSERT INTO video (category_id, title, cover_url, description, status, created_a
 (1, '平行世界', '/uploads/covers/test-cover-9.jpg', '物理学家意外打开了通往平行世界的大门，遇见了另一个自己。', 1, NOW(), NOW()),
 (3, '时间旅行者', '/uploads/covers/test-cover-10.jpg', '一位时间旅行者试图改变过去的悲剧，却发现每次改变都会带来意想不到的后果。', 1, NOW(), NOW());
 
+-- 表6：audit_log（操作审计日志）
+CREATE TABLE IF NOT EXISTS audit_log (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    admin_id BIGINT DEFAULT NULL COMMENT '操作人ID',
+    admin_username VARCHAR(50) DEFAULT NULL COMMENT '操作人用户名',
+    action VARCHAR(50) NOT NULL COMMENT '动作类型：create/update/delete/publish/unpublish/login/logout',
+    resource_type VARCHAR(50) NOT NULL COMMENT '资源类型：video/source/admin/auth',
+    resource_id VARCHAR(100) DEFAULT NULL COMMENT '资源ID',
+    summary JSON DEFAULT NULL COMMENT '变更摘要JSON',
+    ip VARCHAR(45) DEFAULT NULL COMMENT '操作IP地址',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_admin_id (admin_id),
+    INDEX idx_action (action),
+    INDEX idx_resource_type (resource_type),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- 插入播放源数据（m3u8链接）
 INSERT INTO video_source (video_id, source_name, m3u8_url, created_at) VALUES
 (1, '线路1', 'https://cdn1.example.com/video1/index.m3u8', NOW()),

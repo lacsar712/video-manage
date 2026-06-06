@@ -130,3 +130,52 @@ function validatePasswordStrength($password) {
         error('密码必须同时包含字母和数字');
     }
 }
+
+// 获取客户端IP地址
+function getClientIp() {
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+        return trim($ips[0]);
+    }
+    if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+        return $_SERVER['HTTP_X_REAL_IP'];
+    }
+    return $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+}
+
+// 写入操作审计日志
+function writeAuditLog($action, $resourceType, $resourceId = null, $summary = null, $tokenData = null) {
+    try {
+        $db = getDB();
+
+        if ($tokenData === null && isset($GLOBALS['currentAdmin'])) {
+            $tokenData = $GLOBALS['currentAdmin'];
+        }
+
+        $adminId = null;
+        $adminUsername = null;
+
+        if ($tokenData !== null) {
+            $adminId = $tokenData['admin_id'] ?? null;
+            $adminUsername = $tokenData['username'] ?? null;
+        }
+
+        $summaryJson = null;
+        if ($summary !== null) {
+            $summaryJson = is_string($summary) ? $summary : json_encode($summary, JSON_UNESCAPED_UNICODE);
+        }
+
+        $ip = getClientIp();
+
+        $stmt = $db->prepare("
+            INSERT INTO audit_log (admin_id, admin_username, action, resource_type, resource_id, summary, ip, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+        ");
+        $stmt->execute([$adminId, $adminUsername, $action, $resourceType, $resourceId, $summaryJson, $ip]);
+
+        return true;
+    } catch (Exception $e) {
+        error_log('写入审计日志失败: ' . $e->getMessage());
+        return false;
+    }
+}

@@ -68,6 +68,7 @@ try {
 
     // 以下接口需要验证token
     $tokenData = validateToken();
+    $GLOBALS['currentAdmin'] = $tokenData;
 
     // 管理员相关
     if (strpos($path, 'admin/') === 0) {
@@ -94,6 +95,13 @@ try {
     if (strpos($path, 'sources') === 0) {
  require __DIR__ . '/routes/sources.php';
         handleSourceRequest($path, $method);
+        exit;
+    }
+
+    // 操作审计日志
+    if (strpos($path, 'audit-logs') === 0) {
+        require __DIR__ . '/routes/audit.php';
+        handleAuditRequest($path, $method);
         exit;
     }
 

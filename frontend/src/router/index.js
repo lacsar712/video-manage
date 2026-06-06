@@ -49,6 +49,11 @@ const routes = [
         name: 'AdminUserManagement',
         component: () => import('../views/AdminUserManagement.vue'),
         meta: { requiresSuper: true }
+      },
+      {
+        path: 'audit-logs',
+        name: 'AuditLog',
+        component: () => import('../views/AuditLog.vue')
       }
     ]
   }

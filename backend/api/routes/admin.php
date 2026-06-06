@@ -54,6 +54,15 @@ function adminLogin() {
         ");
         $stmt->execute([$user['id'], $token, $expireAt]);
 
+        $loginTokenData = [
+            'admin_id' => $user['id'],
+            'username' => $user['username']
+        ];
+        writeAuditLog('login', 'auth', null, [
+            'username' => $user['username'],
+            'role' => $user['role'] ?? 'editor'
+        ], $loginTokenData);
+
         success([
             'token' => $token,
             'username' => $user['username'],
@@ -68,9 +77,14 @@ function adminLogin() {
 }
 
 // 管理员退出
-function adminLogout($token) {
+function adminLogout($token, $tokenData) {
     try {
         $db = getDB();
+
+        writeAuditLog('logout', 'auth', null, [
+            'username' => $tokenData['username']
+        ], $tokenData);
+
         $stmt = $db->prepare("DELETE FROM admin_token WHERE token = ?");
         $stmt->execute([$token]);
         success(null, '退出成功');
@@ -305,7 +319,7 @@ function handleAdminRequest($path, $method, $tokenData) {
     $parts = explode('/', $path);
 
     if ($path === 'admin/logout' && $method === 'POST') {
-        adminLogout($tokenData['token']);
+        adminLogout($tokenData['token'], $tokenData);
     } elseif ($path === 'admin/info' && $method === 'GET') {
         getAdminInfo($tokenData);
     } elseif ($path === 'admin/users' && $method === 'GET') {
