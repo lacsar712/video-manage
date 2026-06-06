@@ -108,6 +108,30 @@ CREATE TABLE IF NOT EXISTS audit_log (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- 表7：banner（运营轮播图）
+CREATE TABLE IF NOT EXISTS banner (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(200) NOT NULL COMMENT '轮播标题',
+    image_url VARCHAR(500) NOT NULL COMMENT '图片URL',
+    jump_type VARCHAR(20) NOT NULL DEFAULT 'url' COMMENT '跳转类型：video影片详情/url外链',
+    jump_target VARCHAR(500) DEFAULT NULL COMMENT '跳转目标：影片ID或URL',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '排序',
+    status TINYINT NOT NULL DEFAULT 1 COMMENT '1启用 0禁用',
+    start_time DATETIME DEFAULT NULL COMMENT '生效开始时间',
+    end_time DATETIME DEFAULT NULL COMMENT '生效结束时间',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_status (status),
+    INDEX idx_sort_order (sort_order),
+    INDEX idx_time (start_time, end_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 插入测试轮播图数据
+INSERT INTO banner (title, image_url, jump_type, jump_target, sort_order, status, start_time, end_time, created_at, updated_at) VALUES
+('星际迷航重磅推荐', '/uploads/covers/test-cover-1.jpg', 'video', '1', 1, 1, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), NOW(), NOW()),
+('暗影猎人火热上线', '/uploads/covers/test-cover-2.jpg', 'video', '2', 2, 1, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), NOW(), NOW()),
+('官方活动首页', '/uploads/covers/test-cover-3.jpg', 'url', 'https://example.com/promo', 3, 1, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), NOW(), NOW());
+
 -- 插入播放源数据（m3u8链接）
 INSERT INTO video_source (video_id, source_name, m3u8_url, created_at) VALUES
 (1, '线路1', 'https://cdn1.example.com/video1/index.m3u8', NOW()),

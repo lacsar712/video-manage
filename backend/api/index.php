@@ -98,6 +98,13 @@ try {
         exit;
     }
 
+    // 轮播图管理
+    if (strpos($path, 'banners') === 0) {
+        require __DIR__ . '/routes/banners.php';
+        handleBannerRequest($path, $method);
+        exit;
+    }
+
     // 操作审计日志
     if (strpos($path, 'audit-logs') === 0) {
         require __DIR__ . '/routes/audit.php';

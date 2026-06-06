@@ -24,6 +24,10 @@
           <el-icon><Film /></el-icon>
           <span>影片管理</span>
         </el-menu-item>
+        <el-menu-item index="/banners">
+          <el-icon><Picture /></el-icon>
+          <span>轮播图管理</span>
+        </el-menu-item>
         <el-menu-item v-if="isSuper" index="/admin-users">
           <el-icon><User /></el-icon>
           <span>账号管理</span>
@@ -68,7 +72,7 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton, User, Document } from '@element-plus/icons-vue'
+import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton, User, Document, Picture } from '@element-plus/icons-vue'
 import { logout } from '../api'
 
 const router = useRouter()
@@ -86,6 +90,9 @@ const activeMenu = computed(() => {
   if (path.startsWith('/videos')) {
     return '/videos'
   }
+  if (path.startsWith('/banners')) {
+    return '/banners'
+  }
   if (path.startsWith('/admin-users')) {
     return '/admin-users'
   }
@@ -101,6 +108,7 @@ const breadcrumbName = computed(() => {
   if (path === '/categories') return '分类管理'
   if (path === '/videos') return '影片管理'
   if (path === '/videos/new') return '新增影片'
+  if (path === '/banners') return '轮播图管理'
   if (path === '/admin-users') return '账号管理'
   if (path === '/audit-logs') return '操作日志'
   if (path.includes('/edit')) return '编辑影片'

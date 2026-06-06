@@ -272,3 +272,88 @@ export function getAuditResourceTypes() {
     method: 'get'
   })
 }
+
+export function getBannerList(params) {
+  return request({
+    url: '/banners',
+    method: 'get',
+    params
+  })
+}
+
+export function getBannerDetail(id) {
+  return request({
+    url: `/banners/${id}`,
+    method: 'get'
+  })
+}
+
+export function getBannerVideoOptions() {
+  return request({
+    url: '/banners/video-options',
+    method: 'get'
+  })
+}
+
+export function createBanner(data) {
+  const formData = new FormData()
+  formData.append('title', data.title)
+  formData.append('image_url', data.image_url)
+  formData.append('jump_type', data.jump_type || 'url')
+  formData.append('jump_target', data.jump_target || '')
+  formData.append('sort_order', data.sort_order ?? 0)
+  formData.append('status', data.status)
+  if (data.start_time) formData.append('start_time', data.start_time)
+  if (data.end_time) formData.append('end_time', data.end_time)
+
+  return request({
+    url: '/banners',
+    method: 'post',
+    data: formData
+  })
+}
+
+export function updateBanner(id, data) {
+  const formData = new FormData()
+  formData.append('title', data.title)
+  formData.append('image_url', data.image_url)
+  formData.append('jump_type', data.jump_type)
+  formData.append('jump_target', data.jump_target || '')
+  formData.append('sort_order', data.sort_order ?? 0)
+  formData.append('status', data.status)
+  if (data.start_time) formData.append('start_time', data.start_time)
+  if (data.end_time) formData.append('end_time', data.end_time)
+
+  return request({
+    url: `/banners/${id}`,
+    method: 'post',
+    data: formData
+  })
+}
+
+export function deleteBanner(id) {
+  return request({
+    url: `/banners/${id}`,
+    method: 'delete'
+  })
+}
+
+export function updateBannerStatus(id, status) {
+  const formData = new FormData()
+  formData.append('status', status)
+
+  return request({
+    url: `/banners/${id}/status`,
+    method: 'post',
+    data: formData
+  })
+}
+
+export function updateBannerSort(sortList) {
+  return request({
+    url: '/banners/sort',
+    method: 'post',
+    data: { sort_list: sortList },
+    headers: { 'Content-Type': 'application/json' }
+  })
+}

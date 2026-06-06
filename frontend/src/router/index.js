@@ -51,6 +51,11 @@ const routes = [
         meta: { requiresSuper: true }
       },
       {
+        path: 'banners',
+        name: 'BannerManagement',
+        component: () => import('../views/BannerManagement.vue')
+      },
+      {
         path: 'audit-logs',
         name: 'AuditLog',
         component: () => import('../views/AuditLog.vue')
