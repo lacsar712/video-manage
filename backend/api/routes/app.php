@@ -151,6 +151,58 @@ function getAppVideoEpisodes($id) {
     }
 }
 
+// APP API - 获取启用的热搜关键词列表
+function getAppHotKeywords() {
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("
+            SELECT id, keyword, sort_order, click_count
+            FROM hot_keyword
+            WHERE status = 1
+            ORDER BY sort_order ASC, click_count DESC
+            LIMIT 20
+        ");
+        $stmt->execute();
+        $list = $stmt->fetchAll();
+
+        foreach ($list as &$item) {
+            $item['id'] = intval($item['id']);
+            $item['sort_order'] = intval($item['sort_order']);
+            $item['click_count'] = intval($item['click_count']);
+        }
+
+        success(['list' => $list]);
+
+    } catch (Exception $e) {
+        error('查询失败：' . $e->getMessage());
+    }
+}
+
+// APP API - 记录热搜关键词点击
+function recordHotKeywordClick($id) {
+    validateInt($id, '热搜词ID');
+
+    try {
+        $db = getDB();
+
+        $stmt = $db->prepare("SELECT id, status FROM hot_keyword WHERE id = ?");
+        $stmt->execute([$id]);
+        $keyword = $stmt->fetch();
+
+        if (!$keyword || intval($keyword['status']) !== 1) {
+            error('热搜词不存在或已禁用', 404);
+        }
+
+        $stmt = $db->prepare("UPDATE hot_keyword SET click_count = click_count + 1, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([$id]);
+
+        success(null, '记录成功');
+
+    } catch (Exception $e) {
+        error('操作失败：' . $e->getMessage());
+    }
+}
+
 // 处理APP请求
 function handleAppRequest($path, $method) {
     // 解析路径
@@ -168,6 +220,12 @@ function handleAppRequest($path, $method) {
     } elseif ($method === 'GET' && count($parts) === 4 && $parts[1] === 'videos' && $parts[3] === 'episodes') {
         // 获取分集列表
         getAppVideoEpisodes($parts[2]);
+    } elseif ($method === 'GET' && $path === 'app/hot-keywords') {
+        // 获取启用的热搜关键词列表
+        getAppHotKeywords();
+    } elseif ($method === 'POST' && count($parts) === 4 && $parts[1] === 'hot-keywords' && $parts[3] === 'click') {
+        // 记录热搜关键词点击
+        recordHotKeywordClick($parts[2]);
     } else {
         error('接口不存在', 404);
     }

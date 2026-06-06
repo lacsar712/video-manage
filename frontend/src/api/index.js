@@ -483,3 +483,116 @@ export function updateFeedback(id, data) {
     data: formData
   })
 }
+
+export function getHotKeywordList(params) {
+  return request({
+    url: '/hot-keywords',
+    method: 'get',
+    params
+  })
+}
+
+export function getEnabledHotKeywords() {
+  return request({
+    url: '/hot-keywords/enabled',
+    method: 'get'
+  })
+}
+
+export function getHotKeywordDetail(id) {
+  return request({
+    url: `/hot-keywords/${id}`,
+    method: 'get'
+  })
+}
+
+export function createHotKeyword(data) {
+  const formData = new FormData()
+  formData.append('keyword', data.keyword)
+  formData.append('sort_order', data.sort_order ?? 0)
+  formData.append('status', data.status ?? 1)
+  if (data.click_count !== undefined && data.click_count !== null && data.click_count !== '') {
+    formData.append('click_count', data.click_count)
+  }
+
+  return request({
+    url: '/hot-keywords',
+    method: 'post',
+    data: formData
+  })
+}
+
+export function updateHotKeyword(id, data) {
+  const formData = new FormData()
+  formData.append('keyword', data.keyword)
+  formData.append('sort_order', data.sort_order ?? 0)
+  formData.append('status', data.status)
+  if (data.click_count !== undefined && data.click_count !== null && data.click_count !== '') {
+    formData.append('click_count', data.click_count)
+  }
+
+  return request({
+    url: `/hot-keywords/${id}`,
+    method: 'post',
+    data: formData
+  })
+}
+
+export function deleteHotKeyword(id) {
+  return request({
+    url: `/hot-keywords/${id}`,
+    method: 'delete'
+  })
+}
+
+export function updateHotKeywordStatus(id, status) {
+  const formData = new FormData()
+  formData.append('status', status)
+
+  return request({
+    url: `/hot-keywords/${id}/status`,
+    method: 'post',
+    data: formData
+  })
+}
+
+export function updateHotKeywordSort(sortList) {
+  return request({
+    url: '/hot-keywords/sort',
+    method: 'post',
+    data: { sort_list: sortList },
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
+
+export function updateHotKeywordClickCount(id, clickCount) {
+  const formData = new FormData()
+  formData.append('click_count', clickCount)
+
+  return request({
+    url: `/hot-keywords/${id}/click-count`,
+    method: 'post',
+    data: formData
+  })
+}
+
+export function syncHotKeywordStats() {
+  return request({
+    url: '/hot-keywords/sync-stats',
+    method: 'post'
+  })
+}
+
+export function getAppHotKeywords() {
+  return request({
+    url: '/app/hot-keywords',
+    method: 'get'
+  })
+}
+
+export function recordHotKeywordClick(id) {
+  return request({
+    url: `/app/hot-keywords/${id}/click`,
+    method: 'post'
+  })
+}

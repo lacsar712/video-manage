@@ -61,6 +61,11 @@ const routes = [
         component: () => import('../views/BannerManagement.vue')
       },
       {
+        path: 'hot-keywords',
+        name: 'HotKeywordManagement',
+        component: () => import('../views/HotKeywordManagement.vue')
+      },
+      {
         path: 'audit-logs',
         name: 'AuditLog',
         component: () => import('../views/AuditLog.vue')

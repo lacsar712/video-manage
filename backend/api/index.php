@@ -112,6 +112,13 @@ try {
         exit;
     }
 
+    // 热搜关键词管理
+    if (strpos($path, 'hot-keywords') === 0) {
+        require __DIR__ . '/routes/hot_keywords.php';
+        handleHotKeywordRequest($path, $method);
+        exit;
+    }
+
     // 操作审计日志
     if (strpos($path, 'audit-logs') === 0) {
         require __DIR__ . '/routes/audit.php';

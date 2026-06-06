@@ -14,13 +14,41 @@
       <div class="filter-bar">
         <el-form :inline="true" :model="queryForm">
           <el-form-item label="关键词">
-            <el-input
-              v-model="queryForm.keyword"
-              placeholder="请输入影片标题"
-              clearable
-              style="width: 200px"
-              @clear="handleQuery"
-            />
+            <div class="search-wrapper">
+              <el-input
+                v-model="queryForm.keyword"
+                placeholder="请输入影片标题"
+                clearable
+                style="width: 200px"
+                @clear="handleQuery"
+                @focus="handleSearchFocus"
+                @blur="handleSearchBlur"
+              >
+                <template #prefix>
+                  <el-icon><Search /></el-icon>
+                </template>
+              </el-input>
+              <div v-if="showHotKeywords && hotKeywords.length > 0" class="hot-keywords-dropdown">
+                <div class="hot-dropdown-title">
+                  <el-icon color="#f56c6c"><Fire /></el-icon>
+                  <span>热门搜索</span>
+                </div>
+                <div class="hot-dropdown-list">
+                  <div
+                    v-for="(item, index) in hotKeywords"
+                    :key="item.id"
+                    class="hot-dropdown-item"
+                    @mousedown.prevent="handleHotKeywordClick(item)"
+                  >
+                    <span class="hot-rank" :class="{ 'top-three': index < 3 }">
+                      {{ index + 1 }}
+                    </span>
+                    <span class="hot-keyword">{{ item.keyword }}</span>
+                    <span class="hot-count">{{ formatHotCount(item.click_count) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </el-form-item>
           <el-form-item label="分类">
             <el-select
@@ -145,7 +173,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getVideoList, deleteVideo, updateVideoStatus, getCategoryList } from '../api'
+import { Search, Fire } from '@element-plus/icons-vue'
+import { getVideoList, deleteVideo, updateVideoStatus, getCategoryList, getAppHotKeywords, recordHotKeywordClick } from '../api'
 
 const router = useRouter()
 const loading = ref(false)
@@ -154,6 +183,8 @@ const total = ref(0)
 const previewUrl = ref('')
 const showViewer = ref(false)
 const categoryOptions = ref([])
+const hotKeywords = ref([])
+const showHotKeywords = ref(false)
 
 const queryForm = reactive({
   page: 1,
@@ -170,6 +201,43 @@ const fetchCategories = async () => {
   } catch (error) {
     console.error('获取分类列表失败：', error)
   }
+}
+
+const fetchHotKeywords = async () => {
+  try {
+    const res = await getAppHotKeywords()
+    hotKeywords.value = res.data.list
+  } catch (error) {
+    console.error('获取热搜词失败：', error)
+  }
+}
+
+const formatHotCount = (count) => {
+  if (count >= 10000) {
+    return (count / 10000).toFixed(1) + '万'
+  }
+  return count.toString()
+}
+
+const handleSearchFocus = () => {
+  showHotKeywords.value = true
+}
+
+const handleSearchBlur = () => {
+  setTimeout(() => {
+    showHotKeywords.value = false
+  }, 200)
+}
+
+const handleHotKeywordClick = async (item) => {
+  queryForm.keyword = item.keyword
+  showHotKeywords.value = false
+  try {
+    await recordHotKeywordClick(item.id)
+  } catch (error) {
+    console.error('记录点击失败：', error)
+  }
+  handleQuery()
 }
 
 // 获取封面完整URL
@@ -298,6 +366,7 @@ const handleImageError = (e) => {
 
 onMounted(() => {
   fetchCategories()
+  fetchHotKeywords()
   fetchData()
 })
 </script>
@@ -391,5 +460,96 @@ onMounted(() => {
 .video-list :deep(.el-button--primary:hover) {
   background: #4f46e5;
   border-color: #4f46e5;
+}
+
+.search-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.hot-keywords-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  overflow: hidden;
+  min-width: 280px;
+}
+
+.hot-dropdown-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.hot-dropdown-list {
+  padding: 4px 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.hot-dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.hot-dropdown-item:hover {
+  background: #f8fafc;
+}
+
+.hot-dropdown-item .hot-rank {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  background: #f1f5f9;
+  border-radius: 4px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.hot-dropdown-item .hot-rank.top-three {
+  color: #fff;
+  background: linear-gradient(135deg, #f56c6c 0%, #e6a23c 100%);
+}
+
+.hot-dropdown-item .hot-keyword {
+  flex: 1;
+  font-size: 14px;
+  color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hot-dropdown-item .hot-rank.top-three ~ .hot-keyword {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.hot-dropdown-item .hot-count {
+  font-size: 12px;
+  color: #94a3b8;
+  flex-shrink: 0;
+  margin-left: 12px;
 }
 </style>

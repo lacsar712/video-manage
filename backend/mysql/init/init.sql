@@ -205,3 +205,29 @@ INSERT INTO user_feedback (contact_info, content, source_channel, status, handle
 ('微信用户小明', '分类太少，希望增加喜剧类。', 'wechat', 'closed', '已在新分类规划中加入喜剧分类，下个版本上线。', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY)),
 ('13900139000', '搜索功能找不到想要的影片，建议优化搜索。', 'app', 'pending', NULL, NULL, DATE_SUB(NOW(), INTERVAL 3 HOUR)),
 (NULL, '夜间模式太暗了，能否调节亮度？', 'app', 'pending', NULL, NULL, DATE_SUB(NOW(), INTERVAL 1 HOUR));
+
+-- 表10：hot_keyword（热搜关键词）
+CREATE TABLE IF NOT EXISTS hot_keyword (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    keyword VARCHAR(100) NOT NULL COMMENT '关键词',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '排序',
+    status TINYINT NOT NULL DEFAULT 1 COMMENT '1启用 0禁用',
+    click_count INT NOT NULL DEFAULT 0 COMMENT '点击次数',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_keyword (keyword),
+    INDEX idx_status (status),
+    INDEX idx_sort_order (sort_order),
+    INDEX idx_click_count (click_count)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 插入测试热搜关键词数据
+INSERT INTO hot_keyword (keyword, sort_order, status, click_count, created_at, updated_at) VALUES
+('星际迷航', 1, 1, 12580, NOW(), NOW()),
+('科幻电影', 2, 1, 9860, NOW(), NOW()),
+('暗影猎人', 3, 1, 8740, NOW(), NOW()),
+('动作大片', 4, 1, 7620, NOW(), NOW()),
+('记忆碎片', 5, 1, 6530, NOW(), NOW()),
+('悬疑推理', 6, 1, 5420, NOW(), NOW()),
+('未来都市', 7, 0, 4310, NOW(), NOW()),
+('魔法学院', 8, 1, 3200, NOW(), NOW());
