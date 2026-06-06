@@ -19,6 +19,63 @@ export function logout() {
   })
 }
 
+export function getAdminInfo() {
+  return request({
+    url: '/admin/info',
+    method: 'get'
+  })
+}
+
+export function getAdminUserList() {
+  return request({
+    url: '/admin/users',
+    method: 'get'
+  })
+}
+
+export function createAdminUser(data) {
+  const formData = new FormData()
+  formData.append('username', data.username)
+  formData.append('password', data.password)
+  formData.append('role', data.role || 'editor')
+  formData.append('status', data.status ?? 1)
+
+  return request({
+    url: '/admin/users',
+    method: 'post',
+    data: formData
+  })
+}
+
+export function updateAdminUserStatus(id, status) {
+  const formData = new FormData()
+  formData.append('status', status)
+
+  return request({
+    url: `/admin/users/${id}/status`,
+    method: 'post',
+    data: formData
+  })
+}
+
+export function resetAdminUserPassword(id, password) {
+  const formData = new FormData()
+  formData.append('password', password)
+
+  return request({
+    url: `/admin/users/${id}/password`,
+    method: 'post',
+    data: formData
+  })
+}
+
+export function deleteAdminUser(id) {
+  return request({
+    url: `/admin/users/${id}`,
+    method: 'delete'
+  })
+}
+
 export function getCategoryList(params) {
   return request({
     url: '/categories',

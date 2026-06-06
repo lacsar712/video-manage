@@ -43,6 +43,12 @@ const routes = [
         path: 'videos/:id/sources',
         name: 'VideoSources',
         component: () => import('../views/VideoSources.vue')
+      },
+      {
+        path: 'admin-users',
+        name: 'AdminUserManagement',
+        component: () => import('../views/AdminUserManagement.vue'),
+        meta: { requiresSuper: true }
       }
     ]
   }
@@ -56,10 +62,14 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token')
+  const role = localStorage.getItem('role')
 
   if (to.meta.requiresAuth && !token) {
     ElMessage.warning('请先登录')
     next('/login')
+  } else if (to.meta.requiresSuper && role !== 'super') {
+    ElMessage.warning('无权访问，需要超级管理员权限')
+    next('/')
   } else if (to.path === '/login' && token) {
     next('/')
   } else {

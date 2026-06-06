@@ -53,13 +53,13 @@ abstract class TestCase extends BaseTestCase
     /**
      * 创建测试管理员
      */
-    protected function createTestAdmin($username = 'test_admin', $password = 'test123')
+    protected function createTestAdmin($username = 'test_admin', $password = 'test123', $role = 'super', $status = 1)
     {
         $stmt = $this->db->prepare("
-            INSERT INTO admin_user (username, password_hash, created_at)
-            VALUES (?, ?, NOW())
+            INSERT INTO admin_user (username, password_hash, role, status, created_at)
+            VALUES (?, ?, ?, ?, NOW())
         ");
-        $stmt->execute([$username, password_hash($password, PASSWORD_DEFAULT)]);
+        $stmt->execute([$username, password_hash($password, PASSWORD_DEFAULT), $role, $status]);
         return $this->db->lastInsertId();
     }
 

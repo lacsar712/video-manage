@@ -24,6 +24,10 @@
           <el-icon><Film /></el-icon>
           <span>影片管理</span>
         </el-menu-item>
+        <el-menu-item v-if="isSuper" index="/admin-users">
+          <el-icon><User /></el-icon>
+          <span>账号管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -60,13 +64,15 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton } from '@element-plus/icons-vue'
+import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton, User } from '@element-plus/icons-vue'
 import { logout } from '../api'
 
 const router = useRouter()
 const route = useRoute()
 
 const username = ref(localStorage.getItem('username') || 'admin')
+const role = ref(localStorage.getItem('role') || 'editor')
+const isSuper = computed(() => role.value === 'super')
 
 const activeMenu = computed(() => {
   const path = route.path
@@ -75,6 +81,9 @@ const activeMenu = computed(() => {
   }
   if (path.startsWith('/videos')) {
     return '/videos'
+  }
+  if (path.startsWith('/admin-users')) {
+    return '/admin-users'
   }
   return path
 })
@@ -85,6 +94,7 @@ const breadcrumbName = computed(() => {
   if (path === '/categories') return '分类管理'
   if (path === '/videos') return '影片管理'
   if (path === '/videos/new') return '新增影片'
+  if (path === '/admin-users') return '账号管理'
   if (path.includes('/edit')) return '编辑影片'
   if (path.includes('/sources')) return '播放源管理'
   return ''
@@ -101,6 +111,8 @@ const handleLogout = async () => {
     await logout()
     localStorage.removeItem('token')
     localStorage.removeItem('username')
+    localStorage.removeItem('role')
+    localStorage.removeItem('admin_id')
     ElMessage.success('退出成功')
     router.push('/login')
   } catch (error) {

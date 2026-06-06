@@ -94,6 +94,8 @@ const handleLogin = async () => {
       const res = await login(loginForm)
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('username', res.data.username)
+      localStorage.setItem('role', res.data.role || 'editor')
+      localStorage.setItem('admin_id', res.data.admin_id)
       ElMessage.success('登录成功')
       router.push('/')
     } catch (error) {

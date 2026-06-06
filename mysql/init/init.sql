@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS admin_user (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) UNIQUE NOT NULL,
     password_hash VARCHAR(100) NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'editor' COMMENT 'super超级管理员 editor编辑',
+    status TINYINT NOT NULL DEFAULT 1 COMMENT '1启用 0禁用',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -65,8 +67,8 @@ CREATE TABLE IF NOT EXISTS video_source (
 -- 插入种子数据
 
 -- 管理员账号：admin / admin123（密码使用 password_hash）
-INSERT INTO admin_user (username, password_hash, created_at) VALUES
-('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NOW());
+INSERT INTO admin_user (username, password_hash, role, status, created_at) VALUES
+('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super', 1, NOW());
 
 -- 插入分类数据
 INSERT INTO video_category (name, slug, sort_order, status, created_at) VALUES

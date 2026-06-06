@@ -34,6 +34,8 @@ request.interceptors.response.use(
       if (res.code === 401) {
         localStorage.removeItem('token')
         localStorage.removeItem('username')
+        localStorage.removeItem('role')
+        localStorage.removeItem('admin_id')
         router.push('/login')
       }
 

@@ -92,7 +92,7 @@ function validateToken() {
     try {
         $db = getDB();
         $stmt = $db->prepare("
-            SELECT at.*, au.username
+            SELECT at.*, au.username, au.role, au.status
             FROM admin_token at
             JOIN admin_user au ON at.admin_id = au.id
             WHERE at.token = ? AND at.expire_at > NOW()
@@ -104,8 +104,29 @@ function validateToken() {
             error('登录已过期，请重新登录', 401);
         }
 
+        if ($tokenData['status'] != 1) {
+            error('账号已被禁用，请联系管理员', 401);
+        }
+
         return $tokenData;
     } catch (Exception $e) {
         error('验证失败：' . $e->getMessage());
+    }
+}
+
+// 验证当前用户是否为 super 角色，不是则报错
+function requireSuperRole($tokenData) {
+    if (!isset($tokenData['role']) || $tokenData['role'] !== 'super') {
+        error('无权访问，需要超级管理员权限', 403);
+    }
+}
+
+// 验证密码强度：至少 8 位，包含字母和数字
+function validatePasswordStrength($password) {
+    if (strlen($password) < 8) {
+        error('密码长度至少 8 位');
+    }
+    if (!preg_match('/[A-Za-z]/', $password) || !preg_match('/[0-9]/', $password)) {
+        error('密码必须同时包含字母和数字');
     }
 }
