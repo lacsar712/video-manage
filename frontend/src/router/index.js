@@ -25,6 +25,11 @@ const routes = [
         component: () => import('../views/CategoryManagement.vue')
       },
       {
+        path: 'actors',
+        name: 'ActorManagement',
+        component: () => import('../views/ActorManagement.vue')
+      },
+      {
         path: 'videos',
         name: 'VideoList',
         component: () => import('../views/VideoList.vue')

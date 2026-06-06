@@ -254,3 +254,56 @@ INSERT INTO system_config (config_key, config_value, description, config_group, 
 ('default_page_size', '20', '后台列表默认每页显示条数', 'list', 'number', 0, 1),
 ('enable_recommend_sort', '1', '是否开启推荐排序功能（1开启 0关闭）', 'list', 'boolean', 0, 2),
 ('login_fail_lock_threshold', '5', '管理员登录失败锁定阈值（超过此次数账号将被临时锁定）', 'security', 'number', 1, 1);
+
+-- 表12：actor（演员）
+CREATE TABLE IF NOT EXISTS actor (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL COMMENT '演员姓名',
+    avatar_url VARCHAR(255) DEFAULT NULL COMMENT '头像URL',
+    bio TEXT DEFAULT NULL COMMENT '演员简介',
+    status TINYINT NOT NULL DEFAULT 1 COMMENT '1启用 0禁用',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_status (status),
+    INDEX idx_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 表13：video_actor（影片-演员关联）
+CREATE TABLE IF NOT EXISTS video_actor (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    video_id BIGINT NOT NULL COMMENT '影片ID',
+    actor_id BIGINT NOT NULL COMMENT '演员ID',
+    role_name VARCHAR(100) DEFAULT NULL COMMENT '角色名',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '排序',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_video_actor (video_id, actor_id),
+    INDEX idx_video_id (video_id),
+    INDEX idx_actor_id (actor_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 插入测试演员数据
+INSERT INTO actor (name, avatar_url, bio, status, created_at, updated_at) VALUES
+('张明远', '/uploads/covers/test-cover-1.jpg', '实力派男演员，曾出演多部科幻大片，以沉稳内敛的表演风格著称。', 1, NOW(), NOW()),
+('李雪婷', '/uploads/covers/test-cover-2.jpg', '新生代女演员，凭借悬疑片《记忆碎片》获得广泛关注。', 1, NOW(), NOW()),
+('王浩然', '/uploads/covers/test-cover-3.jpg', '动作明星，擅长武打戏，被誉为"新一代功夫担当"。', 1, NOW(), NOW()),
+('陈思琪', '/uploads/covers/test-cover-4.jpg', '国民女演员，戏路宽广，从文艺片到商业片均有出色表现。', 1, NOW(), NOW()),
+('刘子墨', '/uploads/covers/test-cover-5.jpg', '喜剧演员出身，近年转型正剧，表演层次丰富。', 1, NOW(), NOW()),
+('赵晓彤', '/uploads/covers/test-cover-6.jpg', '童星出道，青年演技派代表人物之一。', 0, NOW(), NOW());
+
+-- 插入测试影片-演员关联数据
+INSERT INTO video_actor (video_id, actor_id, role_name, sort_order, created_at) VALUES
+(1, 1, '船长 杰克', 1, NOW()),
+(1, 4, '科学官 艾拉', 2, NOW()),
+(2, 3, '暗影猎人 凯恩', 1, NOW()),
+(2, 2, '神秘女子 莉莉', 2, NOW()),
+(3, 2, '失忆者 艾伦', 1, NOW()),
+(3, 5, '医生 马克', 2, NOW()),
+(4, 1, '黑客 尼尔', 1, NOW()),
+(4, 3, '反抗军首领 维克多', 2, NOW()),
+(6, 4, '魔法导师 艾琳', 1, NOW()),
+(6, 6, '学生 爱丽丝', 2, NOW()),
+(8, 3, '机械战警 亚历克斯', 1, NOW()),
+(9, 1, '物理学家 戴维', 1, NOW()),
+(9, 4, '另一个自己 琳达', 2, NOW()),
+(10, 5, '时间旅行者 亨利', 1, NOW()),
+(10, 2, '女主角 克莱尔', 2, NOW());

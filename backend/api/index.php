@@ -84,6 +84,13 @@ try {
         exit;
     }
 
+    // 演员管理
+    if (strpos($path, 'actors') === 0) {
+        require __DIR__ . '/routes/actors.php';
+        handleActorRequest($path, $method);
+        exit;
+    }
+
     // 影片管理
     if (strpos($path, 'videos') === 0) {
         require __DIR__ . '/routes/videos.php';

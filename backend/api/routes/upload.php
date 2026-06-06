@@ -53,11 +53,17 @@ function uploadBanner() {
     uploadImage('banners');
 }
 
+function uploadAvatar() {
+    uploadImage('avatars');
+}
+
 function handleUploadRequest($path, $method) {
     if ($method === 'POST' && $path === 'upload/cover') {
         uploadCover();
     } elseif ($method === 'POST' && $path === 'upload/banner') {
         uploadBanner();
+    } elseif ($method === 'POST' && $path === 'upload/avatar') {
+        uploadAvatar();
     } else {
         error('接口不存在', 404);
     }

@@ -619,3 +619,71 @@ export function getPublicSystemConfig() {
     method: 'get'
   })
 }
+
+export function getActorList(params) {
+  return request({
+    url: '/actors',
+    method: 'get',
+    params
+  })
+}
+
+export function getActorDetail(id) {
+  return request({
+    url: `/actors/${id}`,
+    method: 'get'
+  })
+}
+
+export function getActorOptions() {
+  return request({
+    url: '/actors/options',
+    method: 'get'
+  })
+}
+
+export function createActor(data) {
+  const formData = new FormData()
+  formData.append('name', data.name)
+  formData.append('avatar_url', data.avatar_url || '')
+  formData.append('bio', data.bio || '')
+  formData.append('status', data.status ?? 1)
+
+  return request({
+    url: '/actors',
+    method: 'post',
+    data: formData
+  })
+}
+
+export function updateActor(id, data) {
+  const formData = new FormData()
+  formData.append('name', data.name)
+  formData.append('avatar_url', data.avatar_url || '')
+  formData.append('bio', data.bio || '')
+  formData.append('status', data.status)
+
+  return request({
+    url: `/actors/${id}`,
+    method: 'post',
+    data: formData
+  })
+}
+
+export function deleteActor(id) {
+  return request({
+    url: `/actors/${id}`,
+    method: 'delete'
+  })
+}
+
+export function updateActorStatus(id, status) {
+  const formData = new FormData()
+  formData.append('status', status)
+
+  return request({
+    url: `/actors/${id}/status`,
+    method: 'post',
+    data: formData
+  })
+}

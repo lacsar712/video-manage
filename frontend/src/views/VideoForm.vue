@@ -85,6 +85,81 @@
 					</el-radio-group>
 				</el-form-item>
 
+				<el-divider content-position="left">参演演员</el-divider>
+
+				<el-form-item label="参演演员">
+					<div class="actor-select-wrapper">
+						<el-select
+							v-model="selectedActorIds"
+							multiple
+							filterable
+							placeholder="请选择演员（支持搜索）"
+							style="width: 100%"
+							@change="handleActorSelectChange"
+						>
+							<el-option
+								v-for="actor in actorOptions"
+								:key="actor.id"
+								:label="actor.name"
+								:value="actor.id"
+							>
+								<div class="actor-option">
+									<img
+										v-if="actor.avatar_url"
+										:src="getAvatarUrl(actor.avatar_url)"
+										class="actor-option-avatar"
+										@error="handleOptionImageError"
+									/>
+									<div v-else class="actor-option-avatar placeholder">
+										<el-icon :size="14"><UserFilled /></el-icon>
+									</div>
+									<span>{{ actor.name }}</span>
+								</div>
+							</el-option>
+						</el-select>
+					</div>
+				</el-form-item>
+
+				<el-form-item v-if="selectedActors.length > 0" label="角色设置">
+					<div class="actor-role-list">
+						<div
+							v-for="(actor, index) in selectedActors"
+							:key="actor.id"
+							class="actor-role-item"
+						>
+							<div class="actor-role-info">
+								<img
+									v-if="actor.avatar_url"
+									:src="getAvatarUrl(actor.avatar_url)"
+									class="actor-role-avatar"
+									@error="handleActorAvatarError"
+								/>
+								<div v-else class="actor-role-avatar placeholder">
+									<el-icon :size="18"><UserFilled /></el-icon>
+								</div>
+								<span class="actor-role-name">{{ actor.name }}</span>
+							</div>
+							<el-input
+								v-model="actor.role_name"
+								placeholder="请输入角色名（选填）"
+								size="small"
+								style="width: 240px"
+								maxlength="100"
+								clearable
+							/>
+							<el-button
+								type="danger"
+								text
+								size="small"
+								@click="removeActor(index)"
+							>
+								<el-icon><Close /></el-icon>
+								移除
+							</el-button>
+						</div>
+					</div>
+				</el-form-item>
+
 				<el-form-item>
 					<el-button type="primary" :loading="loading" @click="handleSubmit">
 						{{ isEdit ? '保存' : '提交' }}
@@ -100,8 +175,8 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
-import { getVideoDetail, createVideo, updateVideo, getCategoryList } from '../api'
+import { Plus, UserFilled, Close } from '@element-plus/icons-vue'
+import { getVideoDetail, createVideo, updateVideo, getCategoryList, getActorOptions } from '../api'
 
 const router = useRouter()
 const route = useRoute()
@@ -110,6 +185,9 @@ const loading = ref(false)
 const isEdit = ref(false)
 const categoryOptions = ref([])
 const typeWarningVisible = ref(false)
+const actorOptions = ref([])
+const selectedActorIds = ref([])
+const selectedActors = ref([])
 
 const uploadAction = computed(() => {
 	const baseURL = import.meta.env.VITE_API_BASE_URL || ''
@@ -139,6 +217,15 @@ const fetchCategories = async () => {
 	}
 }
 
+const fetchActorOptions = async () => {
+	try {
+		const res = await getActorOptions()
+		actorOptions.value = res.data.list
+	} catch (error) {
+		console.error('获取演员列表失败：', error)
+	}
+}
+
 // 获取封面完整URL
 const getCoverUrl = (url) => {
 	if (!url) return ''
@@ -149,6 +236,10 @@ const getCoverUrl = (url) => {
 	// 如果是相对路径，拼接API基础URL
 	const baseURL = import.meta.env.VITE_API_BASE_URL || ''
 	return baseURL ? `${baseURL}${url}` : url
+}
+
+const getAvatarUrl = (url) => {
+	return getCoverUrl(url)
 }
 
 // 上传前验证
@@ -183,6 +274,41 @@ const handleUploadError = (error) => {
 	ElMessage.error('上传失败，请重试')
 }
 
+const handleOptionImageError = (e) => {
+	e.target.style.display = 'none'
+}
+
+const handleActorAvatarError = (e) => {
+	e.target.style.display = 'none'
+}
+
+const handleActorSelectChange = (ids) => {
+	const newSelectedActors = []
+	for (const id of ids) {
+		const existing = selectedActors.value.find(a => a.id === id)
+		if (existing) {
+			newSelectedActors.push(existing)
+		} else {
+			const option = actorOptions.value.find(a => a.id === id)
+			if (option) {
+				newSelectedActors.push({
+					id: option.id,
+					name: option.name,
+					avatar_url: option.avatar_url || '',
+					role_name: ''
+				})
+			}
+		}
+	}
+	selectedActors.value = newSelectedActors
+}
+
+const removeActor = (index) => {
+	const removedId = selectedActors.value[index].id
+	selectedActors.value.splice(index, 1)
+	selectedActorIds.value = selectedActorIds.value.filter(id => id !== removedId)
+}
+
 const rules = {
 	title: [
 		{ required: true, message: '请输入影片标题', trigger: 'blur' },
@@ -214,6 +340,16 @@ const fetchDetail = async () => {
 		data.category_id = data.category_id ? parseInt(data.category_id) : null
 		data.type = data.type || 'movie'
 		Object.assign(form, data)
+
+		if (data.actors && Array.isArray(data.actors)) {
+			selectedActors.value = data.actors.map(a => ({
+				id: a.id,
+				name: a.name,
+				avatar_url: a.avatar_url || '',
+				role_name: a.role_name || ''
+			}))
+			selectedActorIds.value = data.actors.map(a => a.id)
+		}
 	} catch (error) {
 		console.error('获取详情失败：', error)
 		ElMessage.error('获取影片信息失败')
@@ -231,11 +367,19 @@ const handleSubmit = async () => {
 
 		loading.value = true
 		try {
+			const submitData = {
+				...form,
+				actors: JSON.stringify(selectedActors.value.map(a => ({
+					actor_id: a.id,
+					role_name: a.role_name || ''
+				})))
+			}
+
 			if (isEdit.value) {
-				await updateVideo(route.params.id, form)
+				await updateVideo(route.params.id, submitData)
 				ElMessage.success('更新成功')
 			} else {
-				await createVideo(form)
+				await createVideo(submitData)
 				ElMessage.success('添加成功')
 			}
 			router.push('/videos')
@@ -253,6 +397,7 @@ const handleCancel = () => {
 
 onMounted(() => {
 	fetchCategories()
+	fetchActorOptions()
 	isEdit.value = !!route.params.id
 	if (isEdit.value) {
 		fetchDetail()
@@ -328,5 +473,77 @@ onMounted(() => {
 
 .type-warning {
 	margin-top: 10px;
+}
+
+.actor-option {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.actor-option-avatar {
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	object-fit: cover;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #f0f0ff;
+	color: #94a3b8;
+	flex-shrink: 0;
+}
+
+.actor-role-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	width: 100%;
+}
+
+.actor-role-item {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 12px 16px;
+	background: #f8fafc;
+	border-radius: 8px;
+	border: 1px solid #e2e8f0;
+}
+
+.actor-role-info {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 180px;
+}
+
+.actor-role-avatar {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	object-fit: cover;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #f0f0ff;
+	color: #94a3b8;
+	flex-shrink: 0;
+	border: 2px solid #fff;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.actor-role-name {
+	font-size: 14px;
+	font-weight: 500;
+	color: #1e293b;
+}
+
+.video-form :deep(.el-divider__text) {
+	color: #475569;
+	font-weight: 600;
+	font-size: 14px;
+	background: #fff;
+	padding: 0 12px;
 }
 </style>

@@ -78,6 +78,15 @@
               <el-option label="下架" value="0" />
             </el-select>
           </el-form-item>
+          <el-form-item v-if="queryForm.actor_id" label="演员筛选">
+            <el-tag
+              closable
+              type="primary"
+              @close="clearActorFilter"
+            >
+              {{ actorFilterName }}
+            </el-tag>
+          </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleQuery">查询</el-button>
             <el-button @click="handleReset">重置</el-button>
@@ -171,13 +180,14 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Fire } from '@element-plus/icons-vue'
-import { getVideoList, deleteVideo, updateVideoStatus, getCategoryList, getAppHotKeywords, recordHotKeywordClick } from '../api'
+import { getVideoList, deleteVideo, updateVideoStatus, getCategoryList, getAppHotKeywords, recordHotKeywordClick, getActorDetail } from '../api'
 import { loadSystemConfig, getDefaultPageSize } from '../utils/systemConfig'
 
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 const tableData = ref([])
 const total = ref(0)
@@ -186,13 +196,15 @@ const showViewer = ref(false)
 const categoryOptions = ref([])
 const hotKeywords = ref([])
 const showHotKeywords = ref(false)
+const actorFilterName = ref('')
 
 const queryForm = reactive({
   page: 1,
   page_size: 10,
   keyword: '',
   category_id: '',
-  status: ''
+  status: '',
+  actor_id: ''
 })
 
 const fetchCategories = async () => {
@@ -289,6 +301,14 @@ const handleReset = () => {
   queryForm.keyword = ''
   queryForm.category_id = ''
   queryForm.status = ''
+  queryForm.actor_id = ''
+  actorFilterName.value = ''
+  handleQuery()
+}
+
+const clearActorFilter = () => {
+  queryForm.actor_id = ''
+  actorFilterName.value = ''
   handleQuery()
 }
 
@@ -368,6 +388,18 @@ const handleImageError = (e) => {
 onMounted(async () => {
   await loadSystemConfig()
   queryForm.page_size = getDefaultPageSize()
+
+  const actorIdFromQuery = route.query.actor_id
+  if (actorIdFromQuery) {
+    queryForm.actor_id = String(actorIdFromQuery)
+    try {
+      const res = await getActorDetail(actorIdFromQuery)
+      actorFilterName.value = res.data.name ? `演员：${res.data.name}` : '演员筛选'
+    } catch (e) {
+      actorFilterName.value = '演员筛选'
+    }
+  }
+
   fetchCategories()
   fetchHotKeywords()
   fetchData()

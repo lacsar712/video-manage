@@ -20,6 +20,10 @@
           <el-icon><Menu /></el-icon>
           <span>分类管理</span>
         </el-menu-item>
+        <el-menu-item index="/actors">
+          <el-icon><UserFilled /></el-icon>
+          <span>演员库</span>
+        </el-menu-item>
         <el-menu-item index="/videos">
           <el-icon><Film /></el-icon>
           <span>影片管理</span>
@@ -101,6 +105,9 @@ const activeMenu = computed(() => {
   if (path.startsWith('/categories')) {
     return '/categories'
   }
+  if (path.startsWith('/actors')) {
+    return '/actors'
+  }
   if (path.startsWith('/videos')) {
     return '/videos'
   }
@@ -129,6 +136,7 @@ const breadcrumbName = computed(() => {
   const path = route.path
   if (path === '/dashboard') return '首页'
   if (path === '/categories') return '分类管理'
+  if (path === '/actors') return '演员库'
   if (path === '/videos') return '影片管理'
   if (path === '/videos/new') return '新增影片'
   if (path === '/banners') return '轮播图管理'

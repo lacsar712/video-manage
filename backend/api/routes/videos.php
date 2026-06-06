@@ -6,6 +6,7 @@ function getVideoList() {
     $status = $_GET['status'] ?? '';
     $keyword = $_GET['keyword'] ?? '';
     $categoryId = $_GET['category_id'] ?? '';
+    $actorId = $_GET['actor_id'] ?? '';
 
     $page = max(1, $page);
     $pageSize = min(100, max(1, $pageSize));
@@ -16,6 +17,7 @@ function getVideoList() {
 
         $where = [];
         $params = [];
+        $joinClause = '';
 
         if ($status !== '') {
             $where[] = "v.status = ?";
@@ -33,17 +35,25 @@ function getVideoList() {
             $params[] = $categoryId;
         }
 
+        if ($actorId !== '') {
+            validateInt($actorId, '演员ID');
+            $joinClause = "INNER JOIN video_actor va ON v.id = va.video_id";
+            $where[] = "va.actor_id = ?";
+            $params[] = $actorId;
+        }
+
         $whereClause = empty($where) ? '' : 'WHERE ' . implode(' AND ', $where);
 
-        $stmt = $db->prepare("SELECT COUNT(*) as total FROM video v {$whereClause}");
+        $stmt = $db->prepare("SELECT COUNT(DISTINCT v.id) as total FROM video v {$joinClause} {$whereClause}");
         $stmt->execute($params);
         $total = $stmt->fetch()['total'];
 
         $stmt = $db->prepare("
-            SELECT v.id, v.category_id, v.title, v.cover_url, v.description, v.type, v.status,
+            SELECT DISTINCT v.id, v.category_id, v.title, v.cover_url, v.description, v.type, v.status,
                    v.created_at, v.updated_at, vc.name as category_name
             FROM video v
             LEFT JOIN video_category vc ON v.category_id = vc.id
+            {$joinClause}
             {$whereClause}
             ORDER BY v.id DESC
             LIMIT {$offset}, {$pageSize}
@@ -89,10 +99,51 @@ function getVideoDetail($id) {
         $video['created_at'] = formatDateTime($video['created_at']);
         $video['updated_at'] = formatDateTime($video['updated_at']);
 
+        $stmt = $db->prepare("
+            SELECT a.id, a.name, a.avatar_url, va.role_name, va.sort_order
+            FROM video_actor va
+            INNER JOIN actor a ON va.actor_id = a.id
+            WHERE va.video_id = ?
+            ORDER BY va.sort_order ASC, va.id ASC
+        ");
+        $stmt->execute([$id]);
+        $actors = $stmt->fetchAll();
+        $video['actors'] = $actors;
+
         success($video);
 
     } catch (Exception $e) {
         error('查询失败：' . $e->getMessage());
+    }
+}
+
+function saveVideoActors($db, $videoId, $actorsJson) {
+    if ($actorsJson === null || $actorsJson === '') {
+        return;
+    }
+    $actors = json_decode($actorsJson, true);
+    if (!is_array($actors)) {
+        return;
+    }
+
+    $stmt = $db->prepare("DELETE FROM video_actor WHERE video_id = ?");
+    $stmt->execute([$videoId]);
+
+    $sortOrder = 0;
+    foreach ($actors as $actor) {
+        $actorId = isset($actor['actor_id']) ? intval($actor['actor_id']) : (isset($actor['id']) ? intval($actor['id']) : 0);
+        $roleName = isset($actor['role_name']) ? trim($actor['role_name']) : '';
+        if ($actorId <= 0) {
+            continue;
+        }
+
+        $stmt = $db->prepare("
+            INSERT INTO video_actor (video_id, actor_id, role_name, sort_order, created_at)
+            VALUES (?, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE role_name = VALUES(role_name), sort_order = VALUES(sort_order)
+        ");
+        $stmt->execute([$videoId, $actorId, $roleName, $sortOrder]);
+        $sortOrder++;
     }
 }
 
@@ -103,6 +154,7 @@ function createVideo() {
     $type = $_POST['type'] ?? 'movie';
     $status = $_POST['status'] ?? 1;
     $categoryId = $_POST['category_id'] ?? '';
+    $actors = $_POST['actors'] ?? null;
 
     validateRequired([
         'title' => '影片标题'
@@ -141,6 +193,8 @@ function createVideo() {
             }
         }
 
+        $db->beginTransaction();
+
         $stmt = $db->prepare("
             INSERT INTO video (category_id, title, cover_url, description, type, status, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
@@ -149,6 +203,8 @@ function createVideo() {
 
         $videoId = $db->lastInsertId();
 
+        saveVideoActors($db, $videoId, $actors);
+
         writeAuditLog('create', 'video', $videoId, [
             'title' => $title,
             'category_id' => $categoryId,
@@ -156,9 +212,14 @@ function createVideo() {
             'status' => $status
         ]);
 
+        $db->commit();
+
         success(['id' => $videoId], '添加成功');
 
     } catch (Exception $e) {
+        if (isset($db) && $db->inTransaction()) {
+            $db->rollBack();
+        }
         error('添加失败：' . $e->getMessage());
     }
 }
@@ -172,6 +233,7 @@ function updateVideo($id) {
     $type = $_POST['type'] ?? '';
     $status = $_POST['status'] ?? '';
     $categoryId = $_POST['category_id'] ?? '';
+    $actors = $_POST['actors'] ?? null;
 
     validateRequired([
         'title' => '影片标题',
@@ -222,12 +284,16 @@ function updateVideo($id) {
             $type = $oldVideo['type'];
         }
 
+        $db->beginTransaction();
+
         $stmt = $db->prepare("
             UPDATE video
             SET category_id = ?, title = ?, cover_url = ?, description = ?, type = ?, status = ?, updated_at = NOW()
             WHERE id = ?
         ");
         $stmt->execute([$categoryId, $title, $coverUrl, $description, $type, $status, $id]);
+
+        saveVideoActors($db, $id, $actors);
 
         writeAuditLog('update', 'video', $id, [
             'old' => [
@@ -248,9 +314,14 @@ function updateVideo($id) {
             ]
         ]);
 
+        $db->commit();
+
         success(null, '更新成功');
 
     } catch (Exception $e) {
+        if (isset($db) && $db->inTransaction()) {
+            $db->rollBack();
+        }
         error('更新失败：' . $e->getMessage());
     }
 }
@@ -280,6 +351,10 @@ function deleteVideo($id) {
 
             // 删除分集
             $stmt = $db->prepare("DELETE FROM video_episode WHERE video_id = ?");
+            $stmt->execute([$id]);
+
+            // 删除演员关联
+            $stmt = $db->prepare("DELETE FROM video_actor WHERE video_id = ?");
             $stmt->execute([$id]);
 
             // 删除影片
