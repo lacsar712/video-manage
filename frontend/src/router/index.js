@@ -64,6 +64,11 @@ const routes = [
         path: 'audit-logs',
         name: 'AuditLog',
         component: () => import('../views/AuditLog.vue')
+      },
+      {
+        path: 'feedback',
+        name: 'UserFeedback',
+        component: () => import('../views/UserFeedback.vue')
       }
     ]
   }

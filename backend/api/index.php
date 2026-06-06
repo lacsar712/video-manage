@@ -119,6 +119,13 @@ try {
         exit;
     }
 
+    // 用户反馈管理
+    if (strpos($path, 'feedback') === 0) {
+        require __DIR__ . '/routes/feedback.php';
+        handleFeedbackRequest($path, $method, $tokenData);
+        exit;
+    }
+
     // 文件上传
     if (strpos($path, 'upload/') === 0) {
         require __DIR__ . '/routes/upload.php';

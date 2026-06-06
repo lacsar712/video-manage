@@ -36,6 +36,10 @@
           <el-icon><Document /></el-icon>
           <span>操作日志</span>
         </el-menu-item>
+        <el-menu-item index="/feedback">
+          <el-icon><ChatDotRound /></el-icon>
+          <span>用户反馈</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -72,7 +76,7 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton, User, Document, Picture } from '@element-plus/icons-vue'
+import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton, User, Document, Picture, ChatDotRound } from '@element-plus/icons-vue'
 import { logout } from '../api'
 
 const router = useRouter()
@@ -99,6 +103,9 @@ const activeMenu = computed(() => {
   if (path.startsWith('/audit-logs')) {
     return '/audit-logs'
   }
+  if (path.startsWith('/feedback')) {
+    return '/feedback'
+  }
   return path
 })
 
@@ -111,6 +118,7 @@ const breadcrumbName = computed(() => {
   if (path === '/banners') return '轮播图管理'
   if (path === '/admin-users') return '账号管理'
   if (path === '/audit-logs') return '操作日志'
+  if (path === '/feedback') return '用户反馈'
   if (path.includes('/edit')) return '编辑影片'
   if (path.includes('/sources')) return '播放源管理'
   return ''

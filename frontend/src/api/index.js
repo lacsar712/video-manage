@@ -429,3 +429,57 @@ export function batchImportEpisodes(videoId, episodes) {
     data: formData
   })
 }
+
+export function getFeedbackList(params) {
+  return request({
+    url: '/feedback',
+    method: 'get',
+    params
+  })
+}
+
+export function getFeedbackDetail(id) {
+  return request({
+    url: `/feedback/${id}`,
+    method: 'get'
+  })
+}
+
+export function getFeedbackStatusOptions() {
+  return request({
+    url: '/feedback/status-options',
+    method: 'get'
+  })
+}
+
+export function getFeedbackChannelOptions() {
+  return request({
+    url: '/feedback/channel-options',
+    method: 'get'
+  })
+}
+
+export function createFeedback(data) {
+  const formData = new FormData()
+  formData.append('content', data.content)
+  if (data.contact_info) formData.append('contact_info', data.contact_info)
+  formData.append('source_channel', data.source_channel || 'app')
+
+  return request({
+    url: '/feedback',
+    method: 'post',
+    data: formData
+  })
+}
+
+export function updateFeedback(id, data) {
+  const formData = new FormData()
+  if (data.status) formData.append('status', data.status)
+  if (data.handle_note) formData.append('handle_note', data.handle_note)
+
+  return request({
+    url: `/feedback/${id}`,
+    method: 'post',
+    data: formData
+  })
+}

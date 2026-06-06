@@ -166,3 +166,42 @@ INSERT INTO video_source (video_id, source_name, m3u8_url, created_at) VALUES
 (8, '线路2', 'https://cdn2.example.com/video8/index.m3u8', NOW()),
 (9, '线路1', 'https://cdn1.example.com/video9/index.m3u8', NOW()),
 (10, '线路1', 'https://cdn1.example.com/video10/index.m3u8', NOW());
+
+-- 表8：user_feedback（用户反馈）
+CREATE TABLE IF NOT EXISTS user_feedback (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    contact_info VARCHAR(200) DEFAULT NULL COMMENT '联系人信息（手机号/邮箱等）',
+    content TEXT NOT NULL COMMENT '反馈内容',
+    source_channel VARCHAR(50) NOT NULL DEFAULT 'app' COMMENT '来源渠道：app/website/wechat/other',
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' COMMENT '处理状态：pending待处理/processing处理中/closed已关闭',
+    handle_note TEXT DEFAULT NULL COMMENT '处理备注',
+    handled_by BIGINT DEFAULT NULL COMMENT '处理人ID',
+    handled_at DATETIME DEFAULT NULL COMMENT '处理时间',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_status (status),
+    INDEX idx_source_channel (source_channel),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 表9：user_feedback_history（用户反馈处理历史）
+CREATE TABLE IF NOT EXISTS user_feedback_history (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    feedback_id BIGINT NOT NULL COMMENT '反馈ID',
+    admin_id BIGINT DEFAULT NULL COMMENT '操作人ID',
+    admin_username VARCHAR(50) DEFAULT NULL COMMENT '操作人用户名',
+    action VARCHAR(50) NOT NULL COMMENT '动作：create/status_update/note_update',
+    old_status VARCHAR(20) DEFAULT NULL COMMENT '原状态',
+    new_status VARCHAR(20) DEFAULT NULL COMMENT '新状态',
+    note TEXT DEFAULT NULL COMMENT '备注内容',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_feedback_id (feedback_id),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- 插入测试反馈数据
+INSERT INTO user_feedback (contact_info, content, source_channel, status, handle_note, handled_at, created_at) VALUES
+('13800138000', '观看《星际迷航》时视频卡顿，希望能优化播放流畅度。', 'app', 'pending', NULL, NULL, NOW()),
+('user@example.com', '希望增加收藏功能，方便追剧。', 'website', 'processing', '已记录需求，正在与产品确认排期。', NOW(), DATE_SUB(NOW(), INTERVAL 2 DAY)),
+('微信用户小明', '分类太少，希望增加喜剧类。', 'wechat', 'closed', '已在新分类规划中加入喜剧分类，下个版本上线。', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY)),
+('13900139000', '搜索功能找不到想要的影片，建议优化搜索。', 'app', 'pending', NULL, NULL, DATE_SUB(NOW(), INTERVAL 3 HOUR)),
+(NULL, '夜间模式太暗了，能否调节亮度？', 'app', 'pending', NULL, NULL, DATE_SUB(NOW(), INTERVAL 1 HOUR));
