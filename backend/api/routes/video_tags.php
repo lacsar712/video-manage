@@ -50,9 +50,8 @@ function getTagOptions() {
         $db = getDB();
 
         $stmt = $db->prepare("
-            SELECT id, name, type
+            SELECT id, name, type, status
             FROM video_tag
-            WHERE status = 1
             ORDER BY type ASC, sort_order ASC, id ASC
         ");
         $stmt->execute();
@@ -61,6 +60,7 @@ function getTagOptions() {
         $regionList = [];
         $languageList = [];
         foreach ($list as $item) {
+            $item['status'] = intval($item['status']);
             if ($item['type'] === 'region') {
                 $regionList[] = $item;
             } elseif ($item['type'] === 'language') {

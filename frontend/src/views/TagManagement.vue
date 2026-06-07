@@ -16,6 +16,7 @@
           <div class="content-wrapper">
             <div class="left-panel">
               <el-table
+                ref="regionTableRef"
                 :data="regionList"
                 border
                 stripe
@@ -108,6 +109,7 @@
           <div class="content-wrapper">
             <div class="left-panel">
               <el-table
+                ref="languageTableRef"
                 :data="languageList"
                 border
                 stripe
@@ -220,6 +222,8 @@ const languageList = ref([])
 const isEdit = ref(false)
 const regionFormRef = ref(null)
 const languageFormRef = ref(null)
+const regionTableRef = ref(null)
+const languageTableRef = ref(null)
 
 const defaultForm = {
   id: null,
@@ -261,14 +265,25 @@ const fetchList = async () => {
   }
 }
 
-const handleAdd = () => {
+const resetRegionForm = () => {
   isEdit.value = false
+  Object.assign(regionForm, defaultForm)
+  regionFormRef.value?.clearValidate()
+  regionTableRef.value?.setCurrentRow(null)
+}
+
+const resetLanguageForm = () => {
+  isEdit.value = false
+  Object.assign(languageForm, defaultForm)
+  languageFormRef.value?.clearValidate()
+  languageTableRef.value?.setCurrentRow(null)
+}
+
+const handleAdd = () => {
   if (activeTab.value === 'region') {
-    Object.assign(regionForm, defaultForm)
-    regionFormRef.value?.clearValidate()
+    resetRegionForm()
   } else {
-    Object.assign(languageForm, defaultForm)
-    languageFormRef.value?.clearValidate()
+    resetLanguageForm()
   }
 }
 
@@ -423,11 +438,9 @@ const handleDelete = async (row) => {
     ElMessage.success('删除成功')
 
     if (row.type === 'region' && regionForm.id === row.id) {
-      Object.assign(regionForm, defaultForm)
-      isEdit.value = false
+      resetRegionForm()
     } else if (row.type === 'language' && languageForm.id === row.id) {
-      Object.assign(languageForm, defaultForm)
-      isEdit.value = false
+      resetLanguageForm()
     }
     await fetchList()
   } catch (error) {
@@ -438,7 +451,8 @@ const handleDelete = async (row) => {
 }
 
 watch(activeTab, () => {
-  isEdit.value = false
+  resetRegionForm()
+  resetLanguageForm()
 })
 
 onMounted(() => {

@@ -120,6 +120,7 @@
 							:key="tag.id"
 							:label="tag.name"
 							:value="tag.id"
+							:disabled="tag.status !== 1"
 						/>
 					</el-select>
 					<div class="form-tip">最多选择 3 个地区标签</div>
@@ -139,6 +140,7 @@
 							:key="tag.id"
 							:label="tag.name"
 							:value="tag.id"
+							:disabled="tag.status !== 1"
 						/>
 					</el-select>
 					<div class="form-tip">最多选择 3 个语言标签</div>

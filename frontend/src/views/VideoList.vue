@@ -85,9 +85,17 @@
               <el-option
                 v-for="tag in regionTagOptions"
                 :key="tag.id"
-                :label="tag.name"
                 :value="String(tag.id)"
-              />
+              >
+                <span>{{ tag.name }}</span>
+                <el-tag
+                  v-if="tag.status !== 1"
+                  type="info"
+                  size="small"
+                  effect="plain"
+                  style="margin-left: 8px"
+                >已禁用</el-tag>
+              </el-option>
             </el-select>
           </el-form-item>
           <el-form-item label="语言">
@@ -101,9 +109,17 @@
               <el-option
                 v-for="tag in languageTagOptions"
                 :key="tag.id"
-                :label="tag.name"
                 :value="String(tag.id)"
-              />
+              >
+                <span>{{ tag.name }}</span>
+                <el-tag
+                  v-if="tag.status !== 1"
+                  type="info"
+                  size="small"
+                  effect="plain"
+                  style="margin-left: 8px"
+                >已禁用</el-tag>
+              </el-option>
             </el-select>
           </el-form-item>
           <el-form-item label="状态">
