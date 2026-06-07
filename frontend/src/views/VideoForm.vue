@@ -285,8 +285,25 @@ const fetchActorOptions = async () => {
 	try {
 		const res = await getActorOptions()
 		actorOptions.value = res.data.list
+		mergeMissingActorsToOptions()
 	} catch (error) {
 		console.error('获取演员列表失败：', error)
+	}
+}
+
+const mergeMissingActorsToOptions = () => {
+	if (!selectedActors.value.length) return
+	const optionIdSet = new Set(actorOptions.value.map(o => Number(o.id)))
+	const missingActors = selectedActors.value.filter(sa => !optionIdSet.has(Number(sa.id)))
+	if (missingActors.length > 0) {
+		actorOptions.value = [
+			...actorOptions.value,
+			...missingActors.map(ma => ({
+				id: Number(ma.id),
+				name: ma.name + '（已禁用）',
+				avatar_url: ma.avatar_url || ''
+			}))
+		]
 	}
 }
 
@@ -359,14 +376,15 @@ const handleActorAvatarError = (e) => {
 const handleActorSelectChange = (ids) => {
 	const newSelectedActors = []
 	for (const id of ids) {
-		const existing = selectedActors.value.find(a => a.id === id)
+		const numericId = Number(id)
+		const existing = selectedActors.value.find(a => Number(a.id) === numericId)
 		if (existing) {
 			newSelectedActors.push(existing)
 		} else {
-			const option = actorOptions.value.find(a => a.id === id)
+			const option = actorOptions.value.find(a => Number(a.id) === numericId)
 			if (option) {
 				newSelectedActors.push({
-					id: option.id,
+					id: Number(option.id),
 					name: option.name,
 					avatar_url: option.avatar_url || '',
 					role_name: ''
@@ -378,9 +396,9 @@ const handleActorSelectChange = (ids) => {
 }
 
 const removeActor = (index) => {
-	const removedId = selectedActors.value[index].id
+	const removedId = Number(selectedActors.value[index].id)
 	selectedActors.value.splice(index, 1)
-	selectedActorIds.value = selectedActorIds.value.filter(id => id !== removedId)
+	selectedActorIds.value = selectedActorIds.value.filter(id => Number(id) !== removedId)
 }
 
 const handleRegionChange = (vals) => {
@@ -432,12 +450,13 @@ const fetchDetail = async () => {
 
 		if (data.actors && Array.isArray(data.actors)) {
 			selectedActors.value = data.actors.map(a => ({
-				id: a.id,
+				id: Number(a.id),
 				name: a.name,
 				avatar_url: a.avatar_url || '',
 				role_name: a.role_name || ''
 			}))
-			selectedActorIds.value = data.actors.map(a => a.id)
+			selectedActorIds.value = data.actors.map(a => Number(a.id))
+			mergeMissingActorsToOptions()
 		}
 
 		if (data.region_ids && Array.isArray(data.region_ids)) {
@@ -493,10 +512,10 @@ const handleCancel = () => {
 	router.back()
 }
 
-onMounted(() => {
+onMounted(async () => {
 	fetchCategories()
-	fetchActorOptions()
 	fetchTagOptions()
+	await fetchActorOptions()
 	isEdit.value = !!route.params.id
 	if (isEdit.value) {
 		fetchDetail()

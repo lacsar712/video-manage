@@ -410,6 +410,23 @@ const handleSizeChange = () => {
   fetchData()
 }
 
+const syncUrlQuery = () => {
+  const query = { ...route.query }
+  delete query.actor_id
+  delete query.keyword
+  delete query.category_id
+  delete query.status
+  delete query.region
+  delete query.language
+  if (queryForm.actor_id) query.actor_id = queryForm.actor_id
+  if (queryForm.keyword) query.keyword = queryForm.keyword
+  if (queryForm.category_id) query.category_id = queryForm.category_id
+  if (queryForm.status) query.status = queryForm.status
+  if (queryForm.region) query.region = queryForm.region
+  if (queryForm.language) query.language = queryForm.language
+  router.replace({ path: route.path, query })
+}
+
 const handleReset = () => {
   queryForm.keyword = ''
   queryForm.category_id = ''
@@ -418,12 +435,14 @@ const handleReset = () => {
   queryForm.region = ''
   queryForm.language = ''
   actorFilterName.value = ''
+  syncUrlQuery()
   handleQuery()
 }
 
 const clearActorFilter = () => {
   queryForm.actor_id = ''
   actorFilterName.value = ''
+  syncUrlQuery()
   handleQuery()
 }
 
