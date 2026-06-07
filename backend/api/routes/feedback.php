@@ -24,7 +24,7 @@ function getFeedbackList() {
 
     $page = intval($_GET['page'] ?? 1);
     $pageSize = intval($_GET['page_size'] ?? 10);
-    $status = $_GET['status'] ?? 'pending';
+    $status = $_GET['status'] ?? '';
     $sourceChannel = $_GET['source_channel'] ?? '';
     $keyword = $_GET['keyword'] ?? '';
 

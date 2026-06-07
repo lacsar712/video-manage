@@ -308,21 +308,26 @@ const queryForm = reactive({
 const displayTimeline = computed(() => {
   if (!currentDetail.value) return []
   const timeline = []
-  timeline.push({
-    created_at: currentDetail.value.created_at,
-    title: '反馈提交',
-    note: currentDetail.value.content,
-    admin_username: null,
-    timelineType: 'primary',
-    icon: null
-  })
   const history = currentDetail.value.history || []
+  const isManuallyCreated = history.some(h => h.action === 'create')
+  if (!isManuallyCreated) {
+    timeline.push({
+      created_at: currentDetail.value.created_at,
+      title: '反馈提交',
+      note: currentDetail.value.content,
+      admin_username: null,
+      timelineType: 'primary',
+      icon: null
+    })
+  }
   history.forEach(h => {
     let title = ''
     let type = ''
+    let note = h.note
     if (h.action === 'create') {
       title = '手动录入反馈'
       type = 'success'
+      note = note || currentDetail.value.content
     } else if (h.action === 'status_update') {
       title = `状态变更：${getStatusLabel(h.old_status)} → ${getStatusLabel(h.new_status)}`
       type = 'warning'
@@ -333,7 +338,7 @@ const displayTimeline = computed(() => {
     timeline.push({
       created_at: h.created_at,
       title,
-      note: h.note,
+      note,
       admin_username: h.admin_username,
       timelineType: type,
       icon: null
