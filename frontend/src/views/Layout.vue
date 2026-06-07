@@ -94,7 +94,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { HomeFilled, VideoCamera, Film, Menu, UserFilled, SwitchButton, User, Document, Picture, ChatDotRound, HotWater, Setting, PriceTag } from '@element-plus/icons-vue'
 import { logout } from '../api'
-import { loadSystemConfig } from '../utils/systemConfig'
+import { loadSystemConfig, systemConfigState } from '../utils/systemConfig'
 import { onMounted } from 'vue'
 
 const router = useRouter()
