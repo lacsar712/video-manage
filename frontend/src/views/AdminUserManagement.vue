@@ -34,7 +34,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" min-width="170" />
-        <el-table-column label="操作" width="300" fixed="right">
+        <el-table-column label="操作" width="380" fixed="right">
           <template #default="{ row }">
             <el-button
               size="small"
@@ -44,7 +44,15 @@
             >
               {{ row.status == 1 ? '禁用' : '启用' }}
             </el-button>
-            <el-button size="small" type="primary" @click="openResetPasswordDialog(row)">
+            <el-button size="small" type="primary" plain @click="openEditDialog(row)">
+              编辑
+            </el-button>
+            <el-button
+              size="small"
+              type="primary"
+              :disabled="isSelf(row.id)"
+              @click="openResetPasswordDialog(row)"
+            >
               重置密码
             </el-button>
             <el-button
@@ -111,6 +119,48 @@
     </el-dialog>
 
     <el-dialog
+      v-model="editDialogVisible"
+      title="编辑账号"
+      width="480px"
+      @close="resetEditForm"
+    >
+      <el-form
+        ref="editFormRef"
+        :model="editForm"
+        :rules="editRules"
+        label-width="100px"
+      >
+        <el-form-item label="用户名" prop="username">
+          <el-input
+            v-model="editForm.username"
+            placeholder="请输入用户名（3-50字符，字母数字下划线）"
+            maxlength="50"
+            show-word-limit
+            clearable
+          />
+        </el-form-item>
+        <el-form-item label="角色" prop="role">
+          <el-radio-group v-model="editForm.role" :disabled="isSelf(editTarget?.id)">
+            <el-radio :label="'super'" border>超级管理员</el-radio>
+            <el-radio :label="'editor'" border>编辑</el-radio>
+          </el-radio-group>
+          <div v-if="isSelf(editTarget?.id)" class="form-tip">不能修改当前登录账号的角色</div>
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-radio-group v-model="editForm.status" :disabled="isSelf(editTarget?.id)">
+            <el-radio :label="1" border>启用</el-radio>
+            <el-radio :label="0" border>禁用</el-radio>
+          </el-radio-group>
+          <div v-if="isSelf(editTarget?.id)" class="form-tip">不能禁用当前登录账号</div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="editing" @click="handleEdit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog
       v-model="resetDialogVisible"
       title="重置密码"
       width="420px"
@@ -151,6 +201,7 @@ import { Plus } from '@element-plus/icons-vue'
 import {
   getAdminUserList,
   createAdminUser,
+  updateAdminUser,
   updateAdminUserStatus,
   resetAdminUserPassword,
   deleteAdminUser
@@ -158,6 +209,7 @@ import {
 
 const loading = ref(false)
 const submitting = ref(false)
+const editing = ref(false)
 const resetting = ref(false)
 const userList = ref([])
 const currentAdminId = ref(null)
@@ -191,6 +243,32 @@ const createRules = {
           callback()
         }
       },
+      trigger: 'blur'
+    }
+  ],
+  role: [
+    { required: true, message: '请选择角色', trigger: 'change' }
+  ],
+  status: [
+    { required: true, message: '请选择状态', trigger: 'change' }
+  ]
+}
+
+const editDialogVisible = ref(false)
+const editFormRef = ref(null)
+const editTarget = ref(null)
+const editForm = reactive({
+  username: '',
+  role: 'editor',
+  status: 1
+})
+const editRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 50, message: '用户名长度3-50个字符', trigger: 'blur' },
+    {
+      pattern: /^[a-zA-Z0-9_]+$/,
+      message: '用户名只能包含字母、数字和下划线',
       trigger: 'blur'
     }
   ],
@@ -272,6 +350,41 @@ const handleCreate = async () => {
       console.error('创建失败：', error)
     } finally {
       submitting.value = false
+    }
+  })
+}
+
+const openEditDialog = (row) => {
+  editTarget.value = row
+  editForm.username = row.username
+  editForm.role = row.role
+  editForm.status = row.status == 1 ? 1 : 0
+  editDialogVisible.value = true
+}
+
+const resetEditForm = () => {
+  editForm.username = ''
+  editForm.role = 'editor'
+  editForm.status = 1
+  editTarget.value = null
+  editFormRef.value?.clearValidate()
+}
+
+const handleEdit = async () => {
+  if (!editFormRef.value || !editTarget.value) return
+  await editFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    editing.value = true
+    try {
+      await updateAdminUser(editTarget.value.id, editForm)
+      ElMessage.success('更新成功')
+      editDialogVisible.value = false
+      resetEditForm()
+      await fetchList()
+    } catch (error) {
+      console.error('更新失败：', error)
+    } finally {
+      editing.value = false
     }
   })
 }
@@ -385,5 +498,11 @@ onMounted(() => {
 .admin-user-management :deep(.el-button--primary:hover) {
   background: #4f46e5;
   border-color: #4f46e5;
+}
+
+.form-tip {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #94a3b8;
 }
 </style>

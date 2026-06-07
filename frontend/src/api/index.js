@@ -47,6 +47,19 @@ export function createAdminUser(data) {
   })
 }
 
+export function updateAdminUser(id, data) {
+  const formData = new FormData()
+  formData.append('username', data.username)
+  formData.append('role', data.role)
+  formData.append('status', data.status)
+
+  return request({
+    url: `/admin/users/${id}`,
+    method: 'post',
+    data: formData
+  })
+}
+
 export function updateAdminUserStatus(id, status) {
   const formData = new FormData()
   formData.append('status', status)

@@ -52,6 +52,20 @@ export function createAdminUser(data) {
   })
 }
 
+// 编辑管理员用户
+export function updateAdminUser(id, data) {
+  const formData = new FormData()
+  formData.append('username', data.username)
+  formData.append('role', data.role)
+  formData.append('status', data.status)
+
+  return request({
+    url: `/admin/users/${id}`,
+    method: 'post',
+    data: formData
+  })
+}
+
 // 更新管理员用户状态（启用/禁用）
 export function updateAdminUserStatus(id, status) {
   const formData = new FormData()

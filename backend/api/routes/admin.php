@@ -183,6 +183,95 @@ function createAdminUser($tokenData) {
     }
 }
 
+// 编辑管理员用户
+function updateAdminUser($tokenData, $userId) {
+    requireSuperRole($tokenData);
+
+    validateInt($userId, '用户ID');
+
+    $username = $_POST['username'] ?? '';
+    $role = $_POST['role'] ?? '';
+    $status = $_POST['status'] ?? '';
+
+    validateRequired([
+        'username' => '用户名',
+        'role' => '角色',
+        'status' => '状态'
+    ], ['username' => $username, 'role' => $role, 'status' => $status]);
+
+    validateLength($username, 3, 50, '用户名');
+
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+        error('用户名只能包含字母、数字和下划线');
+    }
+
+    if (!in_array($role, ['super', 'editor'])) {
+        error('角色值必须为 super 或 editor');
+    }
+
+    if (!in_array($status, [0, 1, '0', '1'])) {
+        error('状态值必须为 0 或 1');
+    }
+    $status = intval($status);
+
+    $currentAdminId = $tokenData['admin_id'];
+
+    try {
+        $db = getDB();
+
+        $stmt = $db->prepare("SELECT id, role FROM admin_user WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
+        if (!$user) {
+            error('用户不存在', 404);
+        }
+
+        // 检查用户名唯一（排除自身）
+        $stmt = $db->prepare("SELECT id FROM admin_user WHERE username = ? AND id != ?");
+        $stmt->execute([$username, $userId]);
+        if ($stmt->fetch()) {
+            error('用户名已存在');
+        }
+
+        // 如果是编辑自己：不允许降级角色或禁用
+        if ($userId == $currentAdminId) {
+            if ($role !== 'super' && $user['role'] === 'super') {
+                error('不能修改当前登录账号的角色');
+            }
+            if ($status == 0) {
+                error('不能禁用当前登录账号');
+            }
+        }
+
+        // 如果把最后一个 super 降级为 editor，拒绝
+        if ($user['role'] === 'super' && $role !== 'super') {
+            $stmt = $db->prepare("SELECT COUNT(*) as cnt FROM admin_user WHERE role = 'super' AND id != ?");
+            $stmt->execute([$userId]);
+            $superCount = $stmt->fetch()['cnt'];
+            if ($superCount < 1) {
+                error('至少需要保留一个超级管理员账号');
+            }
+        }
+
+        $stmt = $db->prepare("
+            UPDATE admin_user
+            SET username = ?, role = ?, status = ?
+            WHERE id = ?
+        ");
+        $stmt->execute([$username, $role, $status, $userId]);
+
+        // 如果禁用，清除该用户所有 token
+        if ($status == 0) {
+            $stmt = $db->prepare("DELETE FROM admin_token WHERE admin_id = ?");
+            $stmt->execute([$userId]);
+        }
+
+        success(null, '更新成功');
+    } catch (Exception $e) {
+        error('更新失败：' . $e->getMessage());
+    }
+}
+
 // 更新管理员用户状态（启用/禁用）
 function updateAdminUserStatus($tokenData, $userId) {
     requireSuperRole($tokenData);
@@ -235,6 +324,11 @@ function resetAdminUserPassword($tokenData, $userId) {
     requireSuperRole($tokenData);
 
     validateInt($userId, '用户ID');
+
+    $currentAdminId = $tokenData['admin_id'];
+    if ($userId == $currentAdminId) {
+        error('不能重置当前登录账号的密码');
+    }
 
     $newPassword = $_POST['password'] ?? '';
 
@@ -330,6 +424,8 @@ function handleAdminRequest($path, $method, $tokenData) {
         updateAdminUserStatus($tokenData, $parts[2]);
     } elseif (count($parts) === 4 && $parts[1] === 'users' && $parts[3] === 'password' && $method === 'POST') {
         resetAdminUserPassword($tokenData, $parts[2]);
+    } elseif (count($parts) === 3 && $parts[1] === 'users' && $method === 'POST') {
+        updateAdminUser($tokenData, $parts[2]);
     } elseif (count($parts) === 3 && $parts[1] === 'users' && $method === 'DELETE') {
         deleteAdminUser($tokenData, $parts[2]);
     } else {
