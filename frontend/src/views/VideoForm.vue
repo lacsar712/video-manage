@@ -28,9 +28,17 @@
 						<el-option
 							v-for="cat in categoryOptions"
 							:key="cat.id"
-							:label="cat.name"
 							:value="cat.id"
-						/>
+						>
+							<span>{{ cat.name }}</span>
+							<el-tag
+								v-if="cat.status != 1"
+								type="info"
+								size="small"
+								effect="plain"
+								style="margin-left: 8px"
+							>已禁用</el-tag>
+						</el-option>
 					</el-select>
 				</el-form-item>
 
@@ -254,7 +262,7 @@ const form = reactive({
 
 const fetchCategories = async () => {
 	try {
-		const res = await getCategoryList({ status: 1 })
+		const res = await getCategoryList()
 		categoryOptions.value = res.data.list
 	} catch (error) {
 		console.error('获取分类列表失败：', error)

@@ -165,7 +165,7 @@
 
               <div v-if="enabledKeywords.length > 0" class="hot-keywords-preview">
                 <div class="hot-title">
-                  <el-icon color="#f56c6c"><Fire /></el-icon>
+                  <el-icon color="#f56c6c"><HotWater /></el-icon>
                   <span>热门搜索</span>
                 </div>
                 <div class="hot-list">
@@ -244,7 +244,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Rank, Refresh, Search, Fire } from '@element-plus/icons-vue'
+import { Plus, Rank, Refresh, Search, HotWater } from '@element-plus/icons-vue'
 import { loadSystemConfig, getDefaultPageSize } from '../utils/systemConfig'
 import {
   getHotKeywordList,

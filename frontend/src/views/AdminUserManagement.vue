@@ -185,7 +185,7 @@ const createRules = {
     { min: 8, max: 50, message: '密码长度至少8位', trigger: 'blur' },
     {
       validator: (_rule, value, callback) => {
-        if (value && (!/[A-Za-z]/.test(value) || !/[0-9]/.test(value)) {
+        if (value && (!/[A-Za-z]/.test(value) || !/[0-9]/.test(value))) {
           callback(new Error('密码必须同时包含字母和数字'))
         } else {
           callback()

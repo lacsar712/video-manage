@@ -438,10 +438,21 @@ function updateVideo($id) {
         }
 
         if ($categoryId !== null) {
-            $stmt = $db->prepare("SELECT id FROM video_category WHERE id = ? AND status = 1");
-            $stmt->execute([$categoryId]);
-            if (!$stmt->fetch()) {
-                error('所选分类不存在或已禁用');
+            $oldCategoryId = $oldVideo['category_id'];
+            $categoryChanged = $categoryId != $oldCategoryId;
+
+            if ($categoryChanged) {
+                $stmt = $db->prepare("SELECT id FROM video_category WHERE id = ? AND status = 1");
+                $stmt->execute([$categoryId]);
+                if (!$stmt->fetch()) {
+                    error('所选分类不存在或已禁用');
+                }
+            } else {
+                $stmt = $db->prepare("SELECT id FROM video_category WHERE id = ?");
+                $stmt->execute([$categoryId]);
+                if (!$stmt->fetch()) {
+                    error('所选分类不存在');
+                }
             }
         }
 

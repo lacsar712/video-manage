@@ -30,7 +30,7 @@
               </el-input>
               <div v-if="showHotKeywords && hotKeywords.length > 0" class="hot-keywords-dropdown">
                 <div class="hot-dropdown-title">
-                  <el-icon color="#f56c6c"><Fire /></el-icon>
+                  <el-icon color="#f56c6c"><HotWater /></el-icon>
                   <span>热门搜索</span>
                 </div>
                 <div class="hot-dropdown-list">
@@ -55,15 +55,23 @@
               v-model="queryForm.category_id"
               placeholder="请选择分类"
               clearable
-              style="width: 180px"
+              style="width: 200px"
               @clear="handleQuery"
             >
               <el-option
                 v-for="cat in categoryOptions"
                 :key="cat.id"
-                :label="cat.name"
                 :value="String(cat.id)"
-              />
+              >
+                <span>{{ cat.name }}</span>
+                <el-tag
+                  v-if="cat.status != 1"
+                  type="info"
+                  size="small"
+                  effect="plain"
+                  style="margin-left: 8px"
+                >已禁用</el-tag>
+              </el-option>
             </el-select>
           </el-form-item>
           <el-form-item label="地区">
@@ -246,7 +254,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Fire } from '@element-plus/icons-vue'
+import { Search, HotWater } from '@element-plus/icons-vue'
 import { getVideoList, deleteVideo, updateVideoStatus, getCategoryList, getAppHotKeywords, recordHotKeywordClick, getActorDetail, getTagOptions } from '../api'
 import { loadSystemConfig, getDefaultPageSize } from '../utils/systemConfig'
 
@@ -277,7 +285,7 @@ const queryForm = reactive({
 
 const fetchCategories = async () => {
   try {
-    const res = await getCategoryList({ status: 1 })
+    const res = await getCategoryList()
     categoryOptions.value = res.data.list
   } catch (error) {
     console.error('获取分类列表失败：', error)
