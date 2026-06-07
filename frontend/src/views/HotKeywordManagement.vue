@@ -60,14 +60,18 @@
             stripe
             v-loading="loading"
             row-key="id"
-            @row-drag-start="onDragStart"
-            @row-drag-over="onDragOver"
-            @row-drop="onDrop"
-            @row-drag-end="onDragEnd"
+            :row-class-name="getRowClassName"
           >
             <el-table-column type="index" label="序号" width="70" align="center">
-              <template #default="{ $index }">
-                <span class="drag-handle">
+              <template #default="{ $index, row }">
+                <span
+                  class="drag-handle"
+                  draggable="true"
+                  @dragstart="onNativeDragStart($event, row)"
+                  @dragover.prevent="onNativeDragOver(row)"
+                  @drop.stop.prevent="onNativeDrop($event, row)"
+                  @dragend="onNativeDragEnd"
+                >
                   <el-icon><Rank /></el-icon>
                   {{ $index + 1 }}
                 </span>
@@ -504,23 +508,41 @@ const handleSyncStats = async () => {
   }
 }
 
-const onDragStart = (row) => {
-  dragData.dragging = true
-  dragData.dragIndex = tableData.value.findIndex(item => item.id === row.id)
+const getRowClassName = ({ row }) => {
+  if (dragData.dragging) {
+    const dropIndex = dragData.dropIndex
+    const rowIndex = tableData.value.findIndex(item => item.id === row.id)
+    if (rowIndex === dropIndex && dropIndex !== -1 && dropIndex !== dragData.dragIndex) {
+      return 'drop-target-row'
+    }
+  }
+  return ''
 }
 
-const onDragOver = (row) => {
+const onNativeDragStart = (event, row) => {
+  dragData.dragging = true
+  dragData.dragIndex = tableData.value.findIndex(item => item.id === row.id)
+  dragData.dropIndex = -1
+  event.dataTransfer.effectAllowed = 'move'
+  try {
+    event.dataTransfer.setData('text/plain', String(row.id))
+  } catch (e) {}
+}
+
+const onNativeDragOver = (row) => {
   if (!dragData.dragging) return
   dragData.dropIndex = tableData.value.findIndex(item => item.id === row.id)
 }
 
-const onDrop = async (row) => {
+const onNativeDrop = async (event, row) => {
   if (!dragData.dragging) return
   const dropIndex = tableData.value.findIndex(item => item.id === row.id)
   const dragIndex = dragData.dragIndex
 
   if (dragIndex === dropIndex || dragIndex < 0 || dropIndex < 0) {
     dragData.dragging = false
+    dragData.dragIndex = -1
+    dragData.dropIndex = -1
     return
   }
 
@@ -546,7 +568,7 @@ const onDrop = async (row) => {
   }
 }
 
-const onDragEnd = () => {
+const onNativeDragEnd = () => {
   dragData.dragging = false
   dragData.dragIndex = -1
   dragData.dropIndex = -1
@@ -752,5 +774,10 @@ onMounted(async () => {
   color: #94a3b8;
   flex-shrink: 0;
   margin-left: 8px;
+}
+
+.hot-keyword-management :deep(.el-table .drop-target-row td.el-table__cell) {
+  background-color: #eef2ff !important;
+  border-left: 3px solid #6366f1;
 }
 </style>

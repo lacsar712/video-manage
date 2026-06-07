@@ -54,14 +54,18 @@
         stripe
         v-loading="loading"
         row-key="id"
-        @row-drag-start="onDragStart"
-        @row-drag-over="onDragOver"
-        @row-drop="onDrop"
-        @row-drag-end="onDragEnd"
+        :row-class-name="getRowClassName"
       >
         <el-table-column type="index" label="序号" width="60" align="center">
-          <template #default="{ $index }">
-            <span class="drag-handle">
+          <template #default="{ $index, row }">
+            <span
+              class="drag-handle"
+              draggable="true"
+              @dragstart="onNativeDragStart($event, row)"
+              @dragover.prevent="onNativeDragOver(row)"
+              @drop.stop.prevent="onNativeDrop($event, row)"
+              @dragend="onNativeDragEnd"
+            >
               <el-icon><Rank /></el-icon>
               {{ $index + 1 }}
             </span>
@@ -359,8 +363,13 @@ const rules = computed(() => ({
           return
         }
         if (form.jump_type === 'url') {
-          const urlPattern = /^(https?:\/\/)([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/i
-          if (!urlPattern.test(value)) {
+          try {
+            const url = new URL(value)
+            if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+              callback(new Error('仅支持 http:// 或 https:// 协议'))
+              return
+            }
+          } catch (e) {
             callback(new Error('请输入合法的URL地址，需以 http:// 或 https:// 开头'))
             return
           }
@@ -610,23 +619,41 @@ const handleImageError = (e) => {
   e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="160" height="90"%3E%3Crect fill="%23f5f5f5" width="160" height="90"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3E加载失败%3C/text%3E%3C/svg%3E'
 }
 
-const onDragStart = (row) => {
-  dragData.dragging = true
-  dragData.dragIndex = tableData.value.findIndex(item => item.id === row.id)
+const getRowClassName = ({ row }) => {
+  if (dragData.dragging) {
+    const dropIndex = dragData.dropIndex
+    const rowIndex = tableData.value.findIndex(item => item.id === row.id)
+    if (rowIndex === dropIndex && dropIndex !== -1 && dropIndex !== dragData.dragIndex) {
+      return 'drop-target-row'
+    }
+  }
+  return ''
 }
 
-const onDragOver = (row) => {
+const onNativeDragStart = (event, row) => {
+  dragData.dragging = true
+  dragData.dragIndex = tableData.value.findIndex(item => item.id === row.id)
+  dragData.dropIndex = -1
+  event.dataTransfer.effectAllowed = 'move'
+  try {
+    event.dataTransfer.setData('text/plain', String(row.id))
+  } catch (e) {}
+}
+
+const onNativeDragOver = (row) => {
   if (!dragData.dragging) return
   dragData.dropIndex = tableData.value.findIndex(item => item.id === row.id)
 }
 
-const onDrop = async (row) => {
+const onNativeDrop = async (event, row) => {
   if (!dragData.dragging) return
   const dropIndex = tableData.value.findIndex(item => item.id === row.id)
   const dragIndex = dragData.dragIndex
 
   if (dragIndex === dropIndex || dragIndex < 0 || dropIndex < 0) {
     dragData.dragging = false
+    dragData.dragIndex = -1
+    dragData.dropIndex = -1
     return
   }
 
@@ -652,7 +679,7 @@ const onDrop = async (row) => {
   }
 }
 
-const onDragEnd = () => {
+const onNativeDragEnd = () => {
   dragData.dragging = false
   dragData.dragIndex = -1
   dragData.dropIndex = -1
@@ -861,5 +888,10 @@ onMounted(async () => {
   font-size: 12px;
   color: #94a3b8;
   line-height: 1.5;
+}
+
+.banner-management :deep(.el-table .drop-target-row td.el-table__cell) {
+  background-color: #eef2ff !important;
+  border-left: 3px solid #6366f1;
 }
 </style>

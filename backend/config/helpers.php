@@ -40,6 +40,17 @@ function validateLength($value, $min, $max, $label) {
 
 // 验证URL格式
 function validateUrl($url, $label) {
+    if (empty($url)) {
+        error("{$label}不能为空");
+    }
+    $parsed = parse_url($url);
+    if (!$parsed || empty($parsed['scheme']) || empty($parsed['host'])) {
+        error("{$label}格式不正确");
+    }
+    $scheme = strtolower($parsed['scheme']);
+    if (!in_array($scheme, ['http', 'https'])) {
+        error("{$label}仅支持 http 或 https 协议");
+    }
     if (!filter_var($url, FILTER_VALIDATE_URL)) {
         error("{$label}格式不正确");
     }
