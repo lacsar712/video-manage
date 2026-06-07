@@ -67,15 +67,18 @@ function getVideoList() {
         $stmt->execute($params);
         $total = $stmt->fetch()['total'];
 
+        $recommendSortEnabled = getSystemConfigValue('enable_recommend_sort', false) ? 1 : 0;
+        $orderBy = $recommendSortEnabled ? "ORDER BY v.sort_order ASC, v.id DESC" : "ORDER BY v.id DESC";
+
         $stmt = $db->prepare("
             SELECT DISTINCT v.id, v.category_id, v.title, v.cover_url, v.description,
-                   COALESCE(v.type, 'movie') as type, v.status,
+                   COALESCE(v.type, 'movie') as type, v.sort_order, v.status,
                    v.created_at, v.updated_at, vc.name as category_name
             FROM video v
             LEFT JOIN video_category vc ON v.category_id = vc.id
             {$joinClause}
             {$whereClause}
-            ORDER BY v.id DESC
+            {$orderBy}
             LIMIT {$offset}, {$pageSize}
         ");
         $stmt->execute($params);
@@ -123,7 +126,8 @@ function getVideoList() {
             'list' => $list,
             'total' => intval($total),
             'page' => $page,
-            'page_size' => $pageSize
+            'page_size' => $pageSize,
+            'recommend_sort_enabled' => $recommendSortEnabled === 1
         ]);
 
     } catch (Exception $e) {
@@ -273,6 +277,7 @@ function createVideo() {
     $type = $_POST['type'] ?? 'movie';
     $status = $_POST['status'] ?? 1;
     $categoryId = $_POST['category_id'] ?? '';
+    $sortOrder = $_POST['sort_order'] ?? 0;
     $actors = $_POST['actors'] ?? null;
     $regionIds = $_POST['region_ids'] ?? null;
     $languageIds = $_POST['language_ids'] ?? null;
@@ -295,6 +300,13 @@ function createVideo() {
         error('状态值必须为 0 或 1');
     }
     $status = intval($status);
+
+    if ($sortOrder !== '' && $sortOrder !== null) {
+        validateInt($sortOrder, '推荐排序值');
+        $sortOrder = intval($sortOrder);
+    } else {
+        $sortOrder = 0;
+    }
 
     if ($categoryId !== '') {
         validateInt($categoryId, '分类ID');
@@ -340,10 +352,10 @@ function createVideo() {
         $db->beginTransaction();
 
         $stmt = $db->prepare("
-            INSERT INTO video (category_id, title, cover_url, description, type, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+            INSERT INTO video (category_id, title, cover_url, description, type, sort_order, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ");
-        $stmt->execute([$categoryId, $title, $coverUrl, $description, $type, $status]);
+        $stmt->execute([$categoryId, $title, $coverUrl, $description, $type, $sortOrder, $status]);
 
         $videoId = $db->lastInsertId();
 
@@ -354,6 +366,7 @@ function createVideo() {
             'title' => $title,
             'category_id' => $categoryId,
             'type' => $type,
+            'sort_order' => $sortOrder,
             'status' => $status
         ]);
 
@@ -378,6 +391,7 @@ function updateVideo($id) {
     $type = $_POST['type'] ?? '';
     $status = $_POST['status'] ?? '';
     $categoryId = $_POST['category_id'] ?? '';
+    $sortOrder = $_POST['sort_order'] ?? null;
     $actors = $_POST['actors'] ?? null;
     $regionIds = $_POST['region_ids'] ?? null;
     $languageIds = $_POST['language_ids'] ?? null;
@@ -401,6 +415,11 @@ function updateVideo($id) {
         error('状态值必须为 0 或 1');
     }
     $status = intval($status);
+
+    if ($sortOrder !== null && $sortOrder !== '') {
+        validateInt($sortOrder, '推荐排序值');
+        $sortOrder = intval($sortOrder);
+    }
 
     if ($categoryId !== '') {
         validateInt($categoryId, '分类ID');
@@ -465,14 +484,18 @@ function updateVideo($id) {
             $type = $oldVideo['type'];
         }
 
+        if ($sortOrder === null) {
+            $sortOrder = intval($oldVideo['sort_order'] ?? 0);
+        }
+
         $db->beginTransaction();
 
         $stmt = $db->prepare("
             UPDATE video
-            SET category_id = ?, title = ?, cover_url = ?, description = ?, type = ?, status = ?, updated_at = NOW()
+            SET category_id = ?, title = ?, cover_url = ?, description = ?, type = ?, sort_order = ?, status = ?, updated_at = NOW()
             WHERE id = ?
         ");
-        $stmt->execute([$categoryId, $title, $coverUrl, $description, $type, $status, $id]);
+        $stmt->execute([$categoryId, $title, $coverUrl, $description, $type, $sortOrder, $status, $id]);
 
         saveVideoActors($db, $id, $actors);
         saveVideoTags($db, $id, $allTagIdsJson);
@@ -484,6 +507,7 @@ function updateVideo($id) {
                 'cover_url' => $oldVideo['cover_url'],
                 'description' => $oldVideo['description'],
                 'type' => $oldVideo['type'],
+                'sort_order' => intval($oldVideo['sort_order'] ?? 0),
                 'status' => intval($oldVideo['status'])
             ],
             'new' => [
@@ -492,6 +516,7 @@ function updateVideo($id) {
                 'cover_url' => $coverUrl,
                 'description' => $description,
                 'type' => $type,
+                'sort_order' => $sortOrder,
                 'status' => $status
             ]
         ]);

@@ -3,7 +3,7 @@
     <div class="welcome-banner">
       <div class="welcome-text">
         <h2>欢迎回来</h2>
-        <p>影视管理后台 — 高效管理您的影片资源</p>
+        <p>{{ siteName }} — 高效管理您的影片资源</p>
       </div>
     </div>
 
@@ -52,10 +52,16 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Film, Plus, ArrowRight, VideoCamera, Link, Connection } from '@element-plus/icons-vue'
+import { systemConfigState } from '../utils/systemConfig'
 
 const router = useRouter()
+
+const siteName = computed(() => {
+  return (systemConfigState.site_name || '影视管理') + '后台'
+})
 
 const goToVideos = () => {
   router.push('/videos')

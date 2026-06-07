@@ -5,7 +5,7 @@
         <div class="brand-icon">
           <el-icon :size="48"><VideoCamera /></el-icon>
         </div>
-        <h1 class="brand-title">影视管理后台</h1>
+        <h1 class="brand-title">{{ brandTitle }}</h1>
         <p class="brand-desc">高效管理影片资源，一站式内容运营平台</p>
       </div>
     </div>
@@ -59,15 +59,21 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, VideoCamera } from '@element-plus/icons-vue'
 import { login } from '../api'
+import { systemConfigState, loadSystemConfig } from '../utils/systemConfig'
 
 const router = useRouter()
 const loginFormRef = ref(null)
 const loading = ref(false)
+
+const brandTitle = computed(() => {
+  const name = systemConfigState.site_name || '影视管理'
+  return `${name}后台`
+})
 
 const loginForm = reactive({
   username: '',
@@ -105,6 +111,10 @@ const handleLogin = async () => {
     }
   })
 }
+
+onMounted(() => {
+  loadSystemConfig()
+})
 </script>
 
 <style scoped>

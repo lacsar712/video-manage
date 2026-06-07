@@ -190,3 +190,32 @@ function writeAuditLog($action, $resourceType, $resourceId = null, $summary = nu
         return false;
     }
 }
+
+function getSystemConfigValue($configKey, $default = null) {
+    static $cache = [];
+    if (array_key_exists($configKey, $cache)) {
+        return $cache[$configKey];
+    }
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("SELECT config_value, value_type FROM system_config WHERE config_key = ? LIMIT 1");
+        $stmt->execute([$configKey]);
+        $row = $stmt->fetch();
+        if (!$row) {
+            $cache[$configKey] = $default;
+            return $default;
+        }
+        $value = $row['config_value'];
+        if ($row['value_type'] === 'boolean') {
+            $value = intval($value) === 1;
+        } elseif ($row['value_type'] === 'number') {
+            $value = $value === '' || $value === null ? null : intval($value);
+        }
+        $cache[$configKey] = $value;
+        return $value;
+    } catch (Exception $e) {
+        error_log('读取系统配置失败: ' . $e->getMessage());
+        $cache[$configKey] = $default;
+        return $default;
+    }
+}

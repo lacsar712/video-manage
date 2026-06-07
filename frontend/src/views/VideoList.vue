@@ -134,8 +134,29 @@
         </el-form>
       </div>
 
+      <div v-if="recommendSortEnabled" class="sort-notice">
+        <el-alert type="success" :closable="false" show-icon>
+          <template #title>
+            当前已启用 <strong>推荐排序</strong>，列表按推荐排序值升序排列（可在「系统配置」中切换）
+          </template>
+        </el-alert>
+      </div>
+      <div v-else class="sort-notice">
+        <el-alert type="info" :closable="false" show-icon>
+          <template #title>
+            当前为 <strong>默认排序</strong>（按创建时间倒序），可在「系统配置」中开启推荐排序
+          </template>
+        </el-alert>
+      </div>
+
       <el-table :data="tableData" border stripe v-loading="loading">
         <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column label="推荐排序" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="recommendSortEnabled" type="warning" size="small">{{ row.sort_order ?? 0 }}</el-tag>
+            <span v-else class="text-muted">{{ row.sort_order ?? 0 }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="title" label="影片标题" min-width="200" />
         <el-table-column prop="category_name" label="分类" width="120">
           <template #default="{ row }">
@@ -263,6 +284,7 @@ const route = useRoute()
 const loading = ref(false)
 const tableData = ref([])
 const total = ref(0)
+const recommendSortEnabled = ref(false)
 const previewUrl = ref('')
 const showViewer = ref(false)
 const categoryOptions = ref([])
@@ -364,6 +386,7 @@ const fetchData = async () => {
       type: item.type || 'movie'
     }))
     total.value = res.data.total
+    recommendSortEnabled.value = !!res.data.recommend_sort_enabled
   } catch (error) {
     console.error('获取列表失败：', error)
   } finally {
@@ -527,6 +550,14 @@ onMounted(async () => {
 
 .filter-bar :deep(.el-form-item) {
   margin-bottom: 0;
+}
+
+.sort-notice {
+  margin-bottom: 16px;
+}
+
+.sort-notice :deep(.el-alert) {
+  border-radius: 8px;
 }
 
 .pagination {

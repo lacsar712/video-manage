@@ -93,6 +93,17 @@
 					</el-radio-group>
 				</el-form-item>
 
+				<el-form-item label="推荐排序值">
+					<el-input-number
+						v-model="form.sort_order"
+						:min="0"
+						:max="9999"
+						controls-position="right"
+						style="width: 160px"
+					/>
+					<div class="form-tip">数值越小在推荐排序中越靠前，仅当系统配置中「开启推荐排序」时生效</div>
+				</el-form-item>
+
 				<el-divider content-position="left">地区与语言</el-divider>
 
 				<el-form-item label="地区标签" prop="regionIds">
@@ -258,6 +269,7 @@ const form = reactive({
 	description: '',
 	type: 'movie',
 	status: 1,
+	sort_order: 0,
 })
 
 const fetchCategories = async () => {
@@ -414,6 +426,7 @@ const fetchDetail = async () => {
 		const data = res.data
 		data.status = parseInt(data.status)
 		data.category_id = data.category_id ? parseInt(data.category_id) : null
+		data.sort_order = data.sort_order !== undefined && data.sort_order !== null ? parseInt(data.sort_order) : 0
 		data.type = data.type || 'movie'
 		Object.assign(form, data)
 

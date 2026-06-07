@@ -48,12 +48,14 @@ CREATE TABLE IF NOT EXISTS video (
     cover_url VARCHAR(255) NOT NULL,
     description TEXT,
     type VARCHAR(20) NOT NULL DEFAULT 'movie' COMMENT 'movie电影 series剧集',
+    sort_order INT NOT NULL DEFAULT 0 COMMENT '推荐排序值（越小越靠前）',
     status TINYINT NOT NULL DEFAULT 1 COMMENT '1上架 0下架',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_status (status),
     INDEX idx_category_id (category_id),
-    INDEX idx_type (type)
+    INDEX idx_type (type),
+    INDEX idx_sort_order (sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 表4-1：video_episode（剧集分集）
@@ -367,3 +369,17 @@ INSERT INTO video_video_tag (video_id, tag_id) VALUES
 (8, 4), (8, 13),
 (9, 4), (9, 13),
 (10, 4), (10, 13);
+
+-- 迁移：为已有数据库的 video 表增加 sort_order 字段
+SET @col_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'video' AND COLUMN_NAME = 'sort_order');
+SET @sql = IF(@col_exists = 0,
+    'ALTER TABLE video ADD COLUMN sort_order INT NOT NULL DEFAULT 0 COMMENT ''推荐排序值（越小越靠前）'' AFTER type, ADD INDEX idx_sort_order (sort_order)',
+    'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 迁移：为已有的影片数据填充默认 sort_order（按 id 升序即按默认顺序）
+UPDATE video SET sort_order = id WHERE sort_order = 0;
+

@@ -3,7 +3,7 @@
     <el-aside width="220px" class="sidebar">
       <div class="logo">
         <el-icon :size="24"><VideoCamera /></el-icon>
-        <span class="logo-text">影视管理</span>
+        <span class="logo-text">{{ siteName }}</span>
       </div>
       <el-menu
         :default-active="activeMenu"
@@ -156,6 +156,10 @@ const breadcrumbName = computed(() => {
   if (path.includes('/edit')) return '编辑影片'
   if (path.includes('/sources')) return '播放源管理'
   return ''
+})
+
+const siteName = computed(() => {
+  return systemConfigState.site_name || '影视管理'
 })
 
 const handleLogout = async () => {
