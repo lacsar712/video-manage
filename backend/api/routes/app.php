@@ -18,7 +18,7 @@ function getAppVideoList() {
 
         // 查询列表
         $stmt = $db->prepare("
-            SELECT id, title, cover_url, description, type, created_at
+            SELECT id, title, cover_url, description, COALESCE(type, 'movie') as type, created_at
             FROM video
             WHERE status = 1
             ORDER BY id DESC
@@ -53,7 +53,7 @@ function getAppVideoDetail($id) {
 
         // 查询影片（只返回上架的）
         $stmt = $db->prepare("
-            SELECT id, title, cover_url, description, type, created_at
+            SELECT id, title, cover_url, description, COALESCE(type, 'movie') as type, created_at
             FROM video
             WHERE id = ? AND status = 1
         ");
@@ -117,7 +117,7 @@ function getAppVideoEpisodes($id) {
     try {
         $db = getDB();
 
-        $stmt = $db->prepare("SELECT id, title, type FROM video WHERE id = ? AND status = 1");
+        $stmt = $db->prepare("SELECT id, title, COALESCE(type, 'movie') as type FROM video WHERE id = ? AND status = 1");
         $stmt->execute([$id]);
         $video = $stmt->fetch();
 

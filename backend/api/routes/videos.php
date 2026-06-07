@@ -68,7 +68,8 @@ function getVideoList() {
         $total = $stmt->fetch()['total'];
 
         $stmt = $db->prepare("
-            SELECT DISTINCT v.id, v.category_id, v.title, v.cover_url, v.description, v.type, v.status,
+            SELECT DISTINCT v.id, v.category_id, v.title, v.cover_url, v.description,
+                   COALESCE(v.type, 'movie') as type, v.status,
                    v.created_at, v.updated_at, vc.name as category_name
             FROM video v
             LEFT JOIN video_category vc ON v.category_id = vc.id
@@ -146,6 +147,10 @@ function getVideoDetail($id) {
 
         if (!$video) {
             error('影片不存在', 404);
+        }
+
+        if (empty($video['type'])) {
+            $video['type'] = 'movie';
         }
 
         $video['created_at'] = formatDateTime($video['created_at']);

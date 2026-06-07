@@ -12,7 +12,7 @@ function getEpisodeList() {
     try {
         $db = getDB();
 
-        $stmt = $db->prepare("SELECT id, title, type FROM video WHERE id = ?");
+        $stmt = $db->prepare("SELECT id, title, COALESCE(type, 'movie') as type FROM video WHERE id = ?");
         $stmt->execute([$videoId]);
         $video = $stmt->fetch();
 
@@ -381,7 +381,7 @@ function handleEpisodeRequest($path, $method) {
         getEpisodeList();
     } elseif ($method === 'POST' && $path === 'episodes') {
         createEpisode();
-    } elseif ($method === 'POST' && count($parts) === 3 && $parts[2] === 'batch-import') {
+    } elseif ($method === 'POST' && count($parts) === 2 && $parts[1] === 'batch-import') {
         batchImportEpisodes();
     } elseif ($method === 'POST' && count($parts) === 2) {
         updateEpisode($parts[1]);

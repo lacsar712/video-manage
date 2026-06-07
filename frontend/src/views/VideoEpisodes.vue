@@ -175,7 +175,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Upload } from '@element-plus/icons-vue'
@@ -266,14 +266,20 @@ const fetchData = async () => {
   const videoId = route.params.id
   if (!videoId) {
     ElMessage.error('影片ID不存在')
-    router.back()
+    router.replace('/videos')
     return
   }
 
   loading.value = true
   try {
     const res = await getEpisodeList(videoId)
-    videoInfo.value = res.data.video
+    const video = res.data.video
+    if (video.type && video.type !== 'series') {
+      ElMessage.warning('该影片不是剧集类型，无法管理分集')
+      router.replace('/videos')
+      return
+    }
+    videoInfo.value = video
     tableData.value = res.data.list
   } catch (error) {
     console.error('获取列表失败：', error)
@@ -451,6 +457,13 @@ const handleImportSubmit = async () => {
     importLoading.value = false
   }
 }
+
+watch(
+  () => route.params.id,
+  () => {
+    fetchData()
+  }
+)
 
 onMounted(() => {
   fetchData()
