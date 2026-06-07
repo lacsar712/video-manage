@@ -102,17 +102,20 @@
         </el-table-column>
         <el-table-column prop="resource_id" label="资源ID" width="100" />
         <el-table-column prop="ip" label="IP地址" width="140" />
-        <el-table-column label="详情" min-width="300">
+        <el-table-column label="详情 / 变更摘要" min-width="360">
           <template #default="{ row }">
-            <el-button
-              v-if="row.summary"
-              type="primary"
-              link
-              size="small"
-              @click="handleViewDetail(row)"
-            >
-              查看变更
-            </el-button>
+            <div v-if="row.summary" class="summary-cell">
+              <pre class="summary-inline">{{ formatSummaryInline(row.summary) }}</pre>
+              <el-button
+                type="primary"
+                link
+                size="small"
+                class="view-detail-btn"
+                @click="handleViewDetail(row)"
+              >
+                查看完整
+              </el-button>
+            </div>
             <span v-else class="text-muted">无详情</span>
           </template>
         </el-table-column>
@@ -310,6 +313,15 @@ const formatSummary = (summary) => {
   return JSON.stringify(summary, null, 2)
 }
 
+const formatSummaryInline = (summary) => {
+  if (!summary) return ''
+  let text = typeof summary === 'string' ? summary : JSON.stringify(summary, null, 0)
+  if (text.length > 200) {
+    text = text.substring(0, 200) + '...'
+  }
+  return text
+}
+
 onMounted(async () => {
   await loadSystemConfig()
   queryForm.page_size = getDefaultPageSize()
@@ -408,5 +420,33 @@ onMounted(async () => {
   margin: 0;
   max-height: 400px;
   overflow-y: auto;
+}
+
+.summary-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.summary-inline {
+  background: #f1f5f9;
+  color: #334155;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: Consolas, Monaco, 'Courier New', monospace;
+}
+
+.view-detail-btn {
+  padding: 0 !important;
+  height: auto !important;
+  font-size: 12px;
 }
 </style>

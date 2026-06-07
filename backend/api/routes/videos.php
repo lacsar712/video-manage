@@ -522,9 +522,24 @@ function deleteVideo($id) {
                 error('影片不存在', 404);
             }
 
+            // 查询所有播放源，以便逐个记录审计日志
+            $stmt = $db->prepare("SELECT * FROM video_source WHERE video_id = ?");
+            $stmt->execute([$id]);
+            $sources = $stmt->fetchAll();
+
             // 删除播放源
             $stmt = $db->prepare("DELETE FROM video_source WHERE video_id = ?");
             $stmt->execute([$id]);
+
+            // 为每个被删除的播放源写入审计日志
+            foreach ($sources as $source) {
+                writeAuditLog('delete', 'source', $source['id'], [
+                    'video_id' => intval($source['video_id']),
+                    'source_name' => $source['source_name'],
+                    'm3u8_url' => $source['m3u8_url'],
+                    'reason' => '级联删除（影片已删除）'
+                ]);
+            }
 
             // 删除分集
             $stmt = $db->prepare("DELETE FROM video_episode WHERE video_id = ?");
