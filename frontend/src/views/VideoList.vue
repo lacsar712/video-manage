@@ -333,6 +333,10 @@ const handleHotKeywordClick = async (item) => {
   showHotKeywords.value = false
   try {
     await recordHotKeywordClick(item.id)
+    const target = hotKeywords.value.find(kw => kw.id === item.id)
+    if (target) {
+      target.click_count = target.click_count + 1
+    }
   } catch (error) {
     console.error('记录点击失败：', error)
   }

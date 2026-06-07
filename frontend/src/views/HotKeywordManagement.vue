@@ -61,17 +61,14 @@
             v-loading="loading"
             row-key="id"
             :row-class-name="getRowClassName"
+            @row-drag-start="onDragStart"
+            @row-drag-over="onDragOver"
+            @row-drop="onDrop"
+            @row-drag-end="onDragEnd"
           >
             <el-table-column type="index" label="序号" width="70" align="center">
-              <template #default="{ $index, row }">
-                <span
-                  class="drag-handle"
-                  draggable="true"
-                  @dragstart="onNativeDragStart($event, row)"
-                  @dragover.prevent="onNativeDragOver(row)"
-                  @drop.stop.prevent="onNativeDrop($event, row)"
-                  @dragend="onNativeDragEnd"
-                >
+              <template #default="{ $index }">
+                <span class="drag-handle">
                   <el-icon><Rank /></el-icon>
                   {{ $index + 1 }}
                 </span>
@@ -519,22 +516,18 @@ const getRowClassName = ({ row }) => {
   return ''
 }
 
-const onNativeDragStart = (event, row) => {
+const onDragStart = (row) => {
   dragData.dragging = true
   dragData.dragIndex = tableData.value.findIndex(item => item.id === row.id)
   dragData.dropIndex = -1
-  event.dataTransfer.effectAllowed = 'move'
-  try {
-    event.dataTransfer.setData('text/plain', String(row.id))
-  } catch (e) {}
 }
 
-const onNativeDragOver = (row) => {
+const onDragOver = (row) => {
   if (!dragData.dragging) return
   dragData.dropIndex = tableData.value.findIndex(item => item.id === row.id)
 }
 
-const onNativeDrop = async (event, row) => {
+const onDrop = async (row) => {
   if (!dragData.dragging) return
   const dropIndex = tableData.value.findIndex(item => item.id === row.id)
   const dragIndex = dragData.dragIndex
@@ -568,7 +561,7 @@ const onNativeDrop = async (event, row) => {
   }
 }
 
-const onNativeDragEnd = () => {
+const onDragEnd = () => {
   dragData.dragging = false
   dragData.dragIndex = -1
   dragData.dropIndex = -1
